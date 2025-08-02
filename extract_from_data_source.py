@@ -38,7 +38,10 @@ def send_requests():
     #     print(repo['description'])
     #     print(repo['stargazers_count'])
     SPORT_DEVS_URL = "https://tennis.sportdevs.com/rankings?type=eq.atp&class=eq.official"
+    SPORT_DEVS_URL = 'https://tennis.sportdevs.com/'
     SPORT_DEVS = os.getenv('SPORT_DEVS_API_KEY')
+    ENDPOINT = 'rankings'
+    FULL_URL = f"{SPORT_DEVS}{ENDPOINT}?"
     payload = {
         'type': 'atp',
         'class': 'official'
@@ -63,28 +66,51 @@ def send_requests():
     # print(len(json_response))
     print(json_response[0])
     print(json_response[0].keys())
+
+    # store response in a file
+    STORAGE_FILE_NAME = f"store_{ENDPOINT}"
+
+    with open(STORAGE_FILE_NAME, 'w') as f:
+        json.dump(json_response[0], f)
+
     
 
 
     # upload json to data lake
 
-def upload_to_gcs(data):
-    # TODO: need to setup gcloud local auth as an airflow DAG
+def upload_to_gcs(bucket_name, blob_name, blob_data):
+    # TODO: need to setup 'gcloud auth application-default login' 
+    # as an airflow DAG
     # TODO: continue setting up gcloud  
 
     storage_client = storage.Client()
 
     buckets = list(storage_client.list_buckets())
 
+    bucket_ref = None
+    bucket_exists = False
     for b in buckets:
-        print('-', b)
+        if b.name == bucket_name:
+            bucket_exists = True
+            bucket_ref = b
+            break
 
+    if not bucket_exists:
+        bucket_ref = storage_client.create_bucket(bucket_name)
+        print(f"Bucket {bucket_ref.name} created")
+
+    bucket_ref.blob()
+    
+
+def delete_bucket(bucket_name):
+    pass
 
 def main():
     print("hello world")
     # load_env()
-    upload_to_gcs("")
+    send_requests()
+    # upload_to_gcs("")
 
-    # send_requests()
+    
 
 main()
