@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 from dotenv import load_dotenv
 import pandas as pd
+from google.cloud import storage
 
 
 # from google.cloud import storage
@@ -48,7 +49,7 @@ def send_requests():
         'Authorization': "Bearer " +SPORT_DEVS
     }
     
-    print('sending requests..')
+    print('------- sending requests --------')
         
     response = requests.get(
         url = SPORT_DEVS_URL,
@@ -58,19 +59,32 @@ def send_requests():
     )
 
     json_response = response.json()
-    print(json_response)
-    print(json_response.keys())
+    # print(json_response)
+    # print(len(json_response))
+    print(json_response[0])
+    print(json_response[0].keys())
+    
+
 
     # upload json to data lake
 
 def upload_to_gcs(data):
+    # TODO: need to setup gcloud local auth as an airflow DAG
+    # TODO: continue setting up gcloud  
 
-    pass
+    storage_client = storage.Client()
+
+    buckets = list(storage_client.list_buckets())
+
+    for b in buckets:
+        print('-', b)
+
 
 def main():
     print("hello world")
-    load_env()
+    # load_env()
+    upload_to_gcs("")
 
-    send_requests()
+    # send_requests()
 
 main()
