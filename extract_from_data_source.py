@@ -5,7 +5,8 @@ from datetime import datetime
 from dotenv import load_dotenv
 import pandas as pd
 from google.cloud import storage
-
+from sqlalchemy import create_engine, text
+import psycopg2
 
 # from google.cloud import storage
 
@@ -18,6 +19,7 @@ def load_env():
     GOOGLE_GCS = os.getenv('GOOGLE_GCS_API_KEY')
     SPORT_DEVS = os.getenv('SPORT_DEVS_API_KEY')
 
+
     return API_TENNIS, GOOGLE_GCS, SPORT_DEVS
 
 
@@ -26,22 +28,13 @@ extract data from endpoint
 '''
 def send_requests():
     # extract data from endpoint
-    # response = requests.get(
-    #     url = "https://api.github.com/search/repositories",
-    #     params = {"q": "language:python", "sort":"stars", "order":"desc"}
-    # )
 
-    # json_response = response.json()
-    # repos = json_response['items']
-    # for repo in repos[:5]:
-    #     print(repo['name'])
-    #     print(repo['description'])
-    #     print(repo['stargazers_count'])
-    SPORT_DEVS_URL = "https://tennis.sportdevs.com/rankings?type=eq.atp&class=eq.official"
+    # SPORT_DEVS_URL = "https://tennis.sportdevs.com/rankings?type=eq.atp&class=eq.official"
     SPORT_DEVS_URL = 'https://tennis.sportdevs.com/'
     SPORT_DEVS = os.getenv('SPORT_DEVS_API_KEY')
+    
     ENDPOINT = 'rankings'
-    FULL_URL = f"{SPORT_DEVS}{ENDPOINT}?"
+    FULL_URL = f"{SPORT_DEVS_URL}{ENDPOINT}?"
     payload = {
         'type': 'atp',
         'class': 'official'
@@ -55,28 +48,51 @@ def send_requests():
     print('------- sending requests --------')
         
     response = requests.get(
-        url = SPORT_DEVS_URL,
+        url = FULL_URL,
         data = payload,
         headers = headers,
         verify = False
     )
 
     json_response = response.json()
-    # print(json_response)
-    # print(len(json_response))
+    print(json_response)
+    print(len(json_response))
     print(json_response[0])
     print(json_response[0].keys())
 
     # store response in a file
-    STORAGE_FILE_NAME = f"store_{ENDPOINT}"
+    STORAGE_FILE_NAME = f"store_{ENDPOINT}.json"
 
     with open(STORAGE_FILE_NAME, 'w') as f:
-        json.dump(json_response[0], f)
+        json.dump(json_response, f)
+        # json.dump(json_response[0], f)
 
     
 
 
     # upload json to data lake
+
+def get_postgres_creds():
+    load_dotenv()
+    PG_USERNAME = os.getenv('POSTGRES_USERNAME')
+    PG_PASSWORD = os.getenv('POSTGRES_PASSWORD')
+    HOST = os.getenv('DB_HOST')
+    PORT = os.getenv('DB_PORT')
+    DB_NAME = os.getenv('DB_NAME')
+    return PG_USERNAME, PG_PASSWORD, HOST, PORT, DB_NAME
+
+
+def setup_postgres_db():
+    # TODO: consider setting up an airflow dag for creating local pgdb
+    DB_BACKEND = "postgres"
+    DB_API = "psycopg2"
+
+    USERNAME, PASSWORD, HOST, PORT, DB_NAME = get_postgres_creds()
+    connection_string = f"{DB_BACKEND}+{DB_API}://{USERNAME}:{PASSWORD}@{HOST}:{PORT}/{DB_NAME}"
+
+    engine = create_engine(connection_string, echo = True)
+    return engine
+
 
 def upload_to_gcs(bucket_name, blob_name, blob_data):
     # TODO: need to setup 'gcloud auth application-default login' 
@@ -90,6 +106,7 @@ def upload_to_gcs(bucket_name, blob_name, blob_data):
     bucket_ref = None
     bucket_exists = False
     for b in buckets:
+        print(b.name)
         if b.name == bucket_name:
             bucket_exists = True
             bucket_ref = b
@@ -99,7 +116,8 @@ def upload_to_gcs(bucket_name, blob_name, blob_data):
         bucket_ref = storage_client.create_bucket(bucket_name)
         print(f"Bucket {bucket_ref.name} created")
 
-    bucket_ref.blob()
+    # blob_to_upload = bucket_ref.blob(blob_name)
+    # blob_to_upload.upload_from_file(blob_data)
     
 
 def delete_bucket(bucket_name):
@@ -107,9 +125,11 @@ def delete_bucket(bucket_name):
 
 def main():
     print("hello world")
-    # load_env()
-    send_requests()
-    # upload_to_gcs("")
+    load_env()
+    # send_requests()
+    upload_to_gcs("test-bucket-bxkjxzk", "hello", "its_me")
+
+    # engine = setup_postgres_db()
 
     
 
