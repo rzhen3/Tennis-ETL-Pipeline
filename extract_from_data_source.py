@@ -24,7 +24,7 @@ def load_env():
 
 
 '''
-extract data from endpoint
+    extract data from endpoint and return
 '''
 def send_requests():
     # extract data from endpoint
@@ -67,10 +67,9 @@ def send_requests():
         json.dump(json_response, f)
         # json.dump(json_response[0], f)
 
+    return json_response
+
     
-
-
-    # upload json to data lake
 
 def get_postgres_creds():
     load_dotenv()
@@ -93,7 +92,9 @@ def setup_postgres_db():
     engine = create_engine(connection_string, echo = True)
     return engine
 
-
+"""
+    upload blob_data to GCS Bucket
+"""
 def upload_to_gcs(bucket_name, blob_name, blob_data):
     # TODO: need to setup 'gcloud auth application-default login' 
     # as an airflow DAG
@@ -116,8 +117,9 @@ def upload_to_gcs(bucket_name, blob_name, blob_data):
         bucket_ref = storage_client.create_bucket(bucket_name)
         print(f"Bucket {bucket_ref.name} created")
 
-    # blob_to_upload = bucket_ref.blob(blob_name)
-    # blob_to_upload.upload_from_file(blob_data)
+    blob_to_upload = bucket_ref.blob(blob_name)
+    blob_to_upload.upload_from_file()
+    blob_to_upload.upload_from_file(blob_data)
     
 
 def delete_bucket(bucket_name):
@@ -126,11 +128,13 @@ def delete_bucket(bucket_name):
 def main():
     print("hello world")
     load_env()
-    # send_requests()
+    ranking_data = send_requests()
     upload_to_gcs("test-bucket-bxkjxzk", "hello", "its_me")
 
     # engine = setup_postgres_db()
 
+    # TODO: a pull rankings data and upload to gcs bucket
+    # then pull rankings data from gcs bucket and output here
     
 
 main()
