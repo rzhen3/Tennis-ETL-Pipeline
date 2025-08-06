@@ -104,6 +104,7 @@ def upload_to_gcs(bucket_name, blob_name, blob_data):
 
     buckets = list(storage_client.list_buckets())
 
+    # scan visible buckets
     bucket_ref = None
     bucket_exists = False
     for b in buckets:
@@ -113,28 +114,79 @@ def upload_to_gcs(bucket_name, blob_name, blob_data):
             bucket_ref = b
             break
 
+    # create new bucket if it does not exist
     if not bucket_exists:
         bucket_ref = storage_client.create_bucket(bucket_name)
         print(f"Bucket {bucket_ref.name} created")
 
     blob_to_upload = bucket_ref.blob(blob_name)
-    blob_to_upload.upload_from_file()
-    blob_to_upload.upload_from_file(blob_data)
+
+    blob_data_as_str = json.dumps(blob_data)
+
+    blob_to_upload.upload_from_string(blob_data_as_str, content_type = 'application/json')
+    print("uploaded data to GCS bucket...")
+    # blob_to_upload.upload_from_file(blob_data)
     
 
 def delete_bucket(bucket_name):
     pass
 
+def read_data_from_bucket(bucket_name, blob_name):
+    result = None
+
+    storage_client = storage.Client()
+    buckets = list(storage_client.list_buckets())
+
+    # check if bucket exists
+    bucket_exists = False
+    bucket_ref = None
+    for b in buckets:
+        if b.name == bucket_name:
+            bucket_exists = True
+            bucket_ref = b
+
+    # exit early if bucket does not exist
+    if not bucket_exists:
+        print(f"bucket {bucket_name} does not exist")
+        return result
+    print("bucket exists...")
+    
+    # retrieve blob from bucket
+    blob_ref = None
+    blob_exists = False
+    for blob in bucket_ref.list_blobs():
+        if blob.name == blob_name:
+            blob_ref = blob
+            blob_exists = True
+
+    if not blob_exists:
+        print(f"blob {blob_name} does not exist")
+        return result
+    print("blob exists...")
+    
+    print("found both bucket and blob")
+    result = blob_ref.download_as_text()
+    print(result)
+
+    return result
+
 def main():
     print("hello world")
     load_env()
-    ranking_data = send_requests()
-    upload_to_gcs("test-bucket-bxkjxzk", "hello", "its_me")
+    # ranking_data = send_requests()
+    # upload_to_gcs("tennis-etl-bucket", "atp_rankings", ranking_data)
+    # upload_to_gcs("test-bucket-bxkjxzk", "hello", "its_me")
+
+    output = read_data_from_bucket("tennis-etl-bucket", "atp_rankings")
+    print(type(output))
+
 
     # engine = setup_postgres_db()
 
-    # TODO: a pull rankings data and upload to gcs bucket
-    # then pull rankings data from gcs bucket and output here
+    # TODO: upload ranking data in a way to make retrieving data from bucket easy
+    # b/c currently, data retrieved is a stringified array
+
+    # TODO: add exception handling to upload code
     
 
 main()
