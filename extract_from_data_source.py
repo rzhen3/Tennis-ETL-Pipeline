@@ -8,9 +8,10 @@ from google.cloud import storage
 from sqlalchemy import create_engine, text
 import psycopg2
 
-# from google.cloud import storage
 
-
+"""
+    get basic credentials
+"""
 def load_env():
 
     load_dotenv()
@@ -23,42 +24,70 @@ def load_env():
     return API_TENNIS, GOOGLE_GCS, SPORT_DEVS
 
 
+
+"""
+    configure REST request parameters
+"""
+def get_rest_params():
+
+    load_env()
+
+    api_key = os.getenv("SPORT_DEVS_API_KEY")
+
+    results_dict = dict()
+    results_dict['URL'] = 'https://tennis.sportdevs.com/' 
+    # results_dict['ENDPOINT'] = 'rankings'
+    # results_dict['payload'] = {
+    #     'type':'atp',
+    #     'class':'now'
+    # }
+    results_dict['payload'] = {
+        # 'id':'3',
+        'limit':10
+    }
+    results_dict['headers'] = {
+        'Accept':'application/json',
+        'Authorization': "Bearer " +api_key
+    }
+
+    results_dict['ENDPOINT'] = 'leagues'
+
+    return results_dict
+
+
+
+
 '''
     extract data from endpoint and return
 '''
-def send_requests():
+def send_requests(REST_params):
     # extract data from endpoint
 
-    # SPORT_DEVS_URL = "https://tennis.sportdevs.com/rankings?type=eq.atp&class=eq.official"
-    SPORT_DEVS_URL = 'https://tennis.sportdevs.com/'
-    SPORT_DEVS = os.getenv('SPORT_DEVS_API_KEY')
+    URL = REST_params['URL']
+    ENDPOINT = REST_params['ENDPOINT']
     
-    ENDPOINT = 'rankings'
-    FULL_URL = f"{SPORT_DEVS_URL}{ENDPOINT}?"
-    payload = {
-        'type': 'atp',
-        'class': 'official'
-    }
+    FULL_URL = f"{URL}{ENDPOINT}?"
+    payload = REST_params['payload']
+    headers = REST_params['headers']
     
-    headers = {
-        'Accept':'application/json',
-        'Authorization': "Bearer " +SPORT_DEVS
-    }
     
     print('------- sending requests --------')
         
     response = requests.get(
         url = FULL_URL,
-        data = payload,
+        params = payload,
         headers = headers,
         verify = False
     )
 
     json_response = response.json()
-    print(json_response)
+    # print(json_response)
     print(len(json_response))
-    print(json_response[0])
+    # print(json_response[0])
     print(json_response[0].keys())
+
+    for i, val in enumerate(json_response):
+        print(i, val['name'])
 
     # store response in a file
     STORAGE_FILE_NAME = f"store_{ENDPOINT}.json"
@@ -70,6 +99,7 @@ def send_requests():
     return json_response
 
     
+
 
 def get_postgres_creds():
     load_dotenv()
@@ -173,12 +203,15 @@ def read_data_from_bucket(bucket_name, blob_name):
 def main():
     print("hello world")
     load_env()
-    # ranking_data = send_requests()
+
+    REST_param_dict = get_rest_params()
+
+    ranking_data = send_requests(REST_param_dict)
     # upload_to_gcs("tennis-etl-bucket", "atp_rankings", ranking_data)
     # upload_to_gcs("test-bucket-bxkjxzk", "hello", "its_me")
 
-    output = read_data_from_bucket("tennis-etl-bucket", "atp_rankings")
-    print(type(output))
+    # output = read_data_from_bucket("tennis-etl-bucket", "atp_rankings")
+    # print(type(output))
 
 
     # engine = setup_postgres_db()
