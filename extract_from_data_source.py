@@ -36,21 +36,75 @@ def get_rest_params():
 
     results_dict = dict()
     results_dict['URL'] = 'https://tennis.sportdevs.com/' 
+    # FIRST PAYLOAD
     # results_dict['ENDPOINT'] = 'rankings'
     # results_dict['payload'] = {
     #     'type':'atp',
     #     'class':'now'
     # }
-    results_dict['payload'] = {
-        # 'id':'3',
-        'limit':10
-    }
+
+    # SECOND PAYLOAD
+    # results_dict['payload'] = {
+    #     'limit':35
+    # }
+    # results_dict['ENDPOINT'] = 'leagues'
     results_dict['headers'] = {
         'Accept':'application/json',
         'Authorization': "Bearer " +api_key
     }
 
-    results_dict['ENDPOINT'] = 'leagues'
+
+
+    # THIRD PAYLOAD
+    # results_dict['payload'] = {
+    #     'limit':35,
+        
+    #     # "leagueid":"2288"
+    # }
+    # results_dict['ENDPOINT'] = 'tournaments'
+
+    # FOURTH PAYLOAD
+    results_dict['payload'] = {
+        # 'league_id':'eq.2288',
+        # 'league_id':'eq.2601',
+        'league_id':'eq.2524',
+
+    }
+    results_dict['ENDPOINT'] = 'tournaments-by-league'
+
+
+
+    # FIFTH PAYLOAD
+    # results_dict['payload'] = {
+    #     'league_id':'eq.2524'
+    # }
+    # results_dict['ENDPOINT'] = 'seasons'
+
+    # results_dict['payload'] = {
+    #     'league_id': 'eq.2524'
+    # }
+    # results_dict['ENDPOINT'] = 'seasons-by-league'
+    
+
+    # ANOTHER PAYLOAD
+
+    # results_dict['payload'] = {
+    #     'league_id': 'eq.2524'
+    # }
+    # results_dict['ENDPOINT'] = 'leagues-info'
+
+
+    # results_dict['payload'] = {
+    #     # 'tournament_id':'eq.24091',
+    #     'tournament_id':'eq.24223'
+
+    # }
+    # results_dict['ENDPOINT'] = 'seasons-by-tournament'
+
+    results_dict['payload'] = {
+        'date': 'eq.2025-08-10',
+    }
+    results_dict['ENDPOINT'] = "matches-by-date"
 
     return results_dict
 
@@ -82,12 +136,27 @@ def send_requests(REST_params):
 
     json_response = response.json()
     # print(json_response)
-    print(len(json_response))
+    # print(len(json_response))
     # print(json_response[0])
-    print(json_response[0].keys())
+    # print(json_response[0].keys())
+    # print(json_response[0]['tournaments'])
+    print(json_response[0]['matches'][0].keys())
 
-    for i, val in enumerate(json_response):
-        print(i, val['name'])
+    for i, val in enumerate(json_response[0]['matches']):
+        print(i, val['name'], \
+              "t:",val['tournament_name'], \
+                "l:", val['league_name'], \
+                    "s:", val['season_name'])
+        print('---')
+
+    # for i, val in enumerate(json_response[0]['tournaments']):
+    #     print(i, val)
+    #     # print(i, val['name'])
+    #     print('---')
+
+    # for i, val in enumerate(json_response[0]['seasons']):
+    #     print(i, val)
+    #     print('---')
 
     # store response in a file
     STORAGE_FILE_NAME = f"store_{ENDPOINT}.json"
