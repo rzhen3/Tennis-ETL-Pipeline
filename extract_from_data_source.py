@@ -158,7 +158,7 @@ def send_requests(REST_params):
     )
 
     json_response = response.json()
-    print(json_response)
+    # print(json_response)
     # print(len(json_response))
     # print(json_response[0])
     # print(json_response[0].keys())
@@ -182,9 +182,9 @@ def send_requests(REST_params):
     #     print(i, val)
     #     print('---')
 
-    for i, val in enumerate(json_response):
-        print(i, val)
-        print('---')
+    # for i, val in enumerate(json_response):
+    #     print(i, val)
+    #     print('---')
 
     # store response in a file
     # STORAGE_FILE_NAME = f"store_{ENDPOINT}.json"
@@ -218,7 +218,7 @@ def setup_postgres_db():
     return engine
 
 """
-    upload blob_data to GCS Bucket
+    [DEPR] upload blob_data to GCS Bucket
 """
 def upload_to_gcs(bucket_name, blob_name, blob_data):
     # TODO: need to setup 'gcloud auth application-default login' 
@@ -256,12 +256,12 @@ def upload_to_gcs(bucket_name, blob_name, blob_data):
 def delete_bucket(bucket_name):
     pass
 
-def read_data_from_bucket(bucket_name, blob_name):
-    
+"""
+    standard get GCS bucket by name
+"""
+def get_GCS_bucket(bucket_name):
     gcs_storage = storage.Client()
 
-
-    # check if bucket exists
     bucket_ref = None
     try:
         bucket_ref = gcs_storage.get_bucket(bucket_name)
@@ -274,7 +274,30 @@ def read_data_from_bucket(bucket_name, blob_name):
         traceback.print_exc()
         return None
     
+    return bucket_ref
 
+
+"""
+    standard upload json-dict to bucket
+"""
+def upload_json_to_blob(prefix, json_dict, blob_name, bucket_name):
+    bucket_ref = get_GCS_bucket(bucket_name)
+
+    blob_data_str = json.dumps(json_dict)
+    blob = bucket_ref.blob(f"{prefix}/{blob_name}")
+
+    blob.upload_from_string(blob_data_str, content_type = 'application/json')
+
+
+
+
+
+def read_data_from_bucket(bucket_name, blob_name):
+    
+    bucket_ref = get_GCS_bucket(bucket_name)
+    if not bucket_ref:
+        print("ERROR: bucket not found")
+        return None
 
     # check if blob exists
     blob_ref = bucket_ref.get_blob(blob_name)
@@ -296,35 +319,100 @@ def read_data_from_bucket(bucket_name, blob_name):
 def load_leagues(offset = 0, limit = 50):
 
 
-    # check if the leagues bucket exists
-    gcs_storage = storage.Client()
+    STD_PIPELINE_BUCKET = "tennis-etl-bucket"
+    bucket_ref = get_GCS_bucket(STD_PIPELINE_BUCKET)
+    if not bucket_ref:
+        print("ERROR: Failed to retrieve leagues")
+        raise ValueError(f"Could not find bucket {STD_PIPELINE_BUCKET}")
 
-    GCS_BUCKET_NAME = "tennis-etl-bucket"
-    bucket_ref = False
-    try:
-        bucket_ref = gcs_storage.get_bucket(GCS_BUCKET_NAME)
-    except NotFound:
-        print('ERROR: bucket not found')
-        traceback.print_exc()
-        return False
-    except Forbidden:
-        print("ERROR: bucket access forbidden")
-        traceback.print_exc()
-        return False
-    
+
     # send requests to get leagues
-    http_params = get_rest_params()
-    leagues_data = send_requests(http_params)
-    leagues_data = json.dumps(leagues_data)
+    api_key = os.getenv("SPORT_DEVS_API_KEY")
+    league_rest_params = {
+        "ENDPOINT":"leagues",
+        "payload":{
+            'class_id':'eq.415' # ATP
+        },
+        "URL":'https://tennis.sportdevs.com/',
+        'headers':{
+            'Accept':'application/json',
+            'Authorization': "Bearer "+api_key
+        }
+    }
+    leagues_data = send_requests(league_rest_params)
     print("sent and retrieved leagues http request.")
 
-    # check if leagues folder exists
+    # TODO: make each of the 50 leagues a folder prefix then
+    # add the seasons of those leagues as the blobs themselves
+    # also add general information as a separate blob
+
+    # iterate through the names of the leagues and retrieve them 
     folder_prefix = "leagues"
-    blob = bucket_ref.blob(folder_prefix)
-    blob.upload_from_string(leagues_data, content_type = 'application/json')
+    for league in leagues_data:
+
+        league_data_str = json.dumps(league)
+        
+        # create blob for general information
+        general_blob = bucket_ref.blob(f"{folder_prefix}/general_info")
+        general_blob.upload_from_string(league_data_str, 
+                                        content_type = 'application/json')
+        
+        # retrieve seasons for the leagues
+        league_id = league['id']
+        season_rest_params = {
+            "ENDPOINT":"seasons",
+            "payload":{
+                'league_id':f"eq.{league_id}"
+            },
+            "URL":'https://tennis.sportdevs.com/',
+            'headers':{
+                'Accept':'application/json',
+                'Authorization': "Bearer "+api_key
+            }
+        }
+        seasons_data = send_requests(season_rest_params)
+        league_prefix = f"league_{league_id}"
 
 
-    print("uploaded blob.")
+        for season in seasons_data:
+            
+            season_data_str = json.dumps(season)
+            season_blob = bucket_ref.blob(
+                f"{folder_prefix}/{league_prefix}/season_{season['id']}"
+            )
+            season_blob.upload_from_string(
+                season_data_str,
+                content_type = "application/json"
+            )
+
+        # TODO: do checking to see if exists before uploading
+        # b/c operations cost money
+
+
+
+def sending_test():
+    league_id = 1942
+    api_key = os.getenv("SPORT_DEVS_API_KEY")
+    season_rest_params = {
+        "ENDPOINT":"seasons",
+        "payload":{
+            'league_id':f"eq.{league_id}",
+            # 'offset':2
+        },
+        "URL":'https://tennis.sportdevs.com/',
+        'headers':{
+            'Accept':'application/json',
+            'Authorization': "Bearer "+api_key
+        }
+    }
+    seasons_data = send_requests(season_rest_params)
+
+    print('...')
+    for i in seasons_data:
+        print(i)
+        print('---')
+
+
 
 
 """
@@ -343,13 +431,26 @@ def retrieve_leagues():
         print(i, val)
         print('---')
 
+    
+
+
+
+
+
+
+"""
+    retrieve seasons for leagues
+"""
+def retrieve_seasons():
+    pass
 
 def main():
     print("starting...")
     load_env()
 
-    # load_leagues()
-    retrieve_leagues()
+    # sending_test()
+    load_leagues()
+    # retrieve_leagues()
     
 
 
