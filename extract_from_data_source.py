@@ -106,6 +106,17 @@ def get_rest_params():
     }
     results_dict['ENDPOINT'] = "matches-by-date"
 
+    results_dict['payload'] = {
+        'limit':30
+    }
+    results_dict['ENDPOINT'] = "classes"
+
+    results_dict['payload'] = {
+        'class_id':'eq.416'
+        # 'name':'like.*US Open*'
+    }
+    results_dict['ENDPOINT'] = 'leagues'
+
     return results_dict
 
 
@@ -135,19 +146,20 @@ def send_requests(REST_params):
     )
 
     json_response = response.json()
-    # print(json_response)
+    print(json_response)
     # print(len(json_response))
     # print(json_response[0])
     # print(json_response[0].keys())
     # print(json_response[0]['tournaments'])
-    print(json_response[0]['matches'][0].keys())
+    # print(json_response[0]['matches'][0].keys())
 
-    for i, val in enumerate(json_response[0]['matches']):
-        print(i, val['name'], \
-              "t:",val['tournament_name'], \
-                "l:", val['league_name'], \
-                    "s:", val['season_name'])
-        print('---')
+
+    # for i, val in enumerate(json_response[0]['matches']):
+    #     print(i, val['name'], \
+    #           "t:",val['tournament_name'], \
+    #             "l:", val['league_name'], \
+    #                 "s:", val['season_name'])
+    #     print('---')
 
     # for i, val in enumerate(json_response[0]['tournaments']):
     #     print(i, val)
@@ -157,6 +169,10 @@ def send_requests(REST_params):
     # for i, val in enumerate(json_response[0]['seasons']):
     #     print(i, val)
     #     print('---')
+
+    for i, val in enumerate(json_response):
+        print(i, val)
+        print('---')
 
     # store response in a file
     STORAGE_FILE_NAME = f"store_{ENDPOINT}.json"
