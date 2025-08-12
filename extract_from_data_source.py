@@ -4,9 +4,14 @@ import os
 from datetime import datetime
 from dotenv import load_dotenv
 import pandas as pd
+
 from google.cloud import storage
+
 from sqlalchemy import create_engine, text
 import psycopg2
+
+from google.api_core.exceptions import NotFound, Forbidden
+import traceback
 
 
 """
@@ -112,8 +117,15 @@ def get_rest_params():
     results_dict['ENDPOINT'] = "classes"
 
     results_dict['payload'] = {
-        'class_id':'eq.416'
-        # 'name':'like.*US Open*'
+        # 'class_id':'eq.416',
+        'class_id':'eq.415',
+        # 'limit':200
+        'name':'like.*Toronto*'
+    }
+    results_dict['payload'] = {
+        # 'limit':200,
+        # 'offset':150,
+        'class_id':'eq.415'
     }
     results_dict['ENDPOINT'] = 'leagues'
 
@@ -175,11 +187,9 @@ def send_requests(REST_params):
         print('---')
 
     # store response in a file
-    STORAGE_FILE_NAME = f"store_{ENDPOINT}.json"
-
-    with open(STORAGE_FILE_NAME, 'w') as f:
-        json.dump(json_response, f)
-        # json.dump(json_response[0], f)
+    # STORAGE_FILE_NAME = f"store_{ENDPOINT}.json"
+    # with open(STORAGE_FILE_NAME, 'w') as f:
+    #     json.dump(json_response, f)
 
     return json_response
 
@@ -247,51 +257,111 @@ def delete_bucket(bucket_name):
     pass
 
 def read_data_from_bucket(bucket_name, blob_name):
-    result = None
+    
+    gcs_storage = storage.Client()
 
-    storage_client = storage.Client()
-    buckets = list(storage_client.list_buckets())
 
     # check if bucket exists
-    bucket_exists = False
     bucket_ref = None
-    for b in buckets:
-        if b.name == bucket_name:
-            bucket_exists = True
-            bucket_ref = b
-
-    # exit early if bucket does not exist
-    if not bucket_exists:
-        print(f"bucket {bucket_name} does not exist")
-        return result
-    print("bucket exists...")
+    try:
+        bucket_ref = gcs_storage.get_bucket(bucket_name)
+    except NotFound:
+        print('ERROR: bucket not found')
+        traceback.print_exc()
+        return None
+    except Forbidden:
+        print("ERROR: bucket access forbidden")
+        traceback.print_exc()
+        return None
     
-    # retrieve blob from bucket
-    blob_ref = None
-    blob_exists = False
-    for blob in bucket_ref.list_blobs():
-        if blob.name == blob_name:
-            blob_ref = blob
-            blob_exists = True
 
-    if not blob_exists:
-        print(f"blob {blob_name} does not exist")
-        return result
-    print("blob exists...")
+
+    # check if blob exists
+    blob_ref = bucket_ref.get_blob(blob_name)
+    if not blob_ref:
+        print("ERROR: blob not found")
+        return None
     
-    print("found both bucket and blob")
-    result = blob_ref.download_as_text()
-    print(result)
+    blob_text = blob_ref.download_as_text(encoding = 'utf-8')
+    result = json.loads(blob_text)
 
+    print('blob downloaded.')
     return result
 
+
+
+"""
+    load first 50 leagues into GCS bucket
+"""
+def load_leagues(offset = 0, limit = 50):
+
+
+    # check if the leagues bucket exists
+    gcs_storage = storage.Client()
+
+    GCS_BUCKET_NAME = "tennis-etl-bucket"
+    bucket_ref = False
+    try:
+        bucket_ref = gcs_storage.get_bucket(GCS_BUCKET_NAME)
+    except NotFound:
+        print('ERROR: bucket not found')
+        traceback.print_exc()
+        return False
+    except Forbidden:
+        print("ERROR: bucket access forbidden")
+        traceback.print_exc()
+        return False
+    
+    # send requests to get leagues
+    http_params = get_rest_params()
+    leagues_data = send_requests(http_params)
+    leagues_data = json.dumps(leagues_data)
+    print("sent and retrieved leagues http request.")
+
+    # check if leagues folder exists
+    folder_prefix = "leagues"
+    blob = bucket_ref.blob(folder_prefix)
+    blob.upload_from_string(leagues_data, content_type = 'application/json')
+
+
+    print("uploaded blob.")
+
+
+"""
+    retrieve leagues from GCS bucket
+"""
+def retrieve_leagues():
+
+    # retrieve GCS league data
+    GCS_BUCKET_NAME = 'tennis-etl-bucket'
+    GCS_BLOB_NAME = 'leagues'
+    data = read_data_from_bucket(GCS_BUCKET_NAME, GCS_BLOB_NAME)
+    if not data:
+        return
+    print("retrieved gcs data as:")
+    for i, val in enumerate(data):
+        print(i, val)
+        print('---')
+
+
 def main():
-    print("hello world")
+    print("starting...")
     load_env()
 
-    REST_param_dict = get_rest_params()
+    # load_leagues()
+    retrieve_leagues()
+    
 
-    ranking_data = send_requests(REST_param_dict)
+
+    # REST_param_dict = get_rest_params()
+
+    # ranking_data = send_requests(REST_param_dict)
+
+
+    # TODO: load first 50 leagues, and upload to GCS bucket. 
+    # load first 50 leagues
+
+
     # upload_to_gcs("tennis-etl-bucket", "atp_rankings", ranking_data)
     # upload_to_gcs("test-bucket-bxkjxzk", "hello", "its_me")
 
@@ -305,6 +375,8 @@ def main():
     # b/c currently, data retrieved is a stringified array
 
     # TODO: add exception handling to upload code
+
+    # TODO: setup GCS buckets with Terraform
     
 
 main()
