@@ -137,6 +137,7 @@ def get_rest_params():
 '''
     extract data from endpoint and return
 '''
+# TODO: add exception handling
 def send_requests(REST_params):
     # extract data from endpoint
 
@@ -253,8 +254,6 @@ def upload_to_gcs(bucket_name, blob_name, blob_data):
     # blob_to_upload.upload_from_file(blob_data)
     
 
-def delete_bucket(bucket_name):
-    pass
 
 """
     standard get GCS bucket by name
@@ -289,9 +288,6 @@ def upload_json_to_blob(prefix, json_dict, blob_name, bucket_name):
     blob.upload_from_string(blob_data_str, content_type = 'application/json')
 
 
-
-
-
 def read_data_from_bucket(bucket_name, blob_name):
     
     bucket_ref = get_GCS_bucket(bucket_name)
@@ -316,13 +312,14 @@ def read_data_from_bucket(bucket_name, blob_name):
 """
     load first 50 leagues into GCS bucket
 """
+# TODO: add retry policy to http request sending
+# handle possible exceptions to request sending
 def load_leagues(offset = 0, limit = 50):
-
 
     STD_PIPELINE_BUCKET = "tennis-etl-bucket"
     bucket_ref = get_GCS_bucket(STD_PIPELINE_BUCKET)
     if not bucket_ref:
-        print("ERROR: Failed to retrieve leagues")
+        print("ERROR: Could not find bucket")
         raise ValueError(f"Could not find bucket {STD_PIPELINE_BUCKET}")
 
 
@@ -331,7 +328,9 @@ def load_leagues(offset = 0, limit = 50):
     league_rest_params = {
         "ENDPOINT":"leagues",
         "payload":{
-            'class_id':'eq.415' # ATP
+            'class_id':'eq.415', # ATP
+            'offset':offset,
+            'limit':limit
         },
         "URL":'https://tennis.sportdevs.com/',
         'headers':{
@@ -342,23 +341,29 @@ def load_leagues(offset = 0, limit = 50):
     leagues_data = send_requests(league_rest_params)
     print("sent and retrieved leagues http request.")
 
-    # TODO: make each of the 50 leagues a folder prefix then
-    # add the seasons of those leagues as the blobs themselves
-    # also add general information as a separate blob
-
     # iterate through the names of the leagues and retrieve them 
     folder_prefix = "leagues"
     for league in leagues_data:
 
-        league_data_str = json.dumps(league)
+        league_id = league['id']
+        league_name = league['name']
+
+        # make league name suitable
+        league_name = league_name.strip()
+        league_name = league_name.replace(',', '_')
+        league_name = league_name.replace(' ', '_')
+        league_prefix = f"league_{league_name}"
         
         # create blob for general information
-        general_blob = bucket_ref.blob(f"{folder_prefix}/general_info")
-        general_blob.upload_from_string(league_data_str, 
-                                        content_type = 'application/json')
+        league_data_str = json.dumps(league)
+
+        GENERAL_BLOB_NAME = f"{folder_prefix}/{league_prefix}/general_info"
+        if bucket_ref.get_blob(GENERAL_BLOB_NAME) is None:
+            general_blob = bucket_ref.blob(GENERAL_BLOB_NAME)
+            general_blob.upload_from_string(league_data_str, 
+                                            content_type = 'application/json')
         
         # retrieve seasons for the leagues
-        league_id = league['id']
         season_rest_params = {
             "ENDPOINT":"seasons",
             "payload":{
@@ -371,33 +376,78 @@ def load_leagues(offset = 0, limit = 50):
             }
         }
         seasons_data = send_requests(season_rest_params)
-        league_prefix = f"league_{league_id}"
 
 
+        # upload retrieved seasons under the leg
         for season in seasons_data:
-            
             season_data_str = json.dumps(season)
-            season_blob = bucket_ref.blob(
-                f"{folder_prefix}/{league_prefix}/season_{season['id']}"
-            )
-            season_blob.upload_from_string(
-                season_data_str,
-                content_type = "application/json"
-            )
+            BLOB_NAME = f"{folder_prefix}/{league_prefix}/{season['year']}_season"
 
-        # TODO: do checking to see if exists before uploading
-        # b/c operations cost money
+            if bucket_ref.get_blob(BLOB_NAME) is None:
+                season_blob = bucket_ref.blob(BLOB_NAME)
+                season_blob.upload_from_string(
+                    season_data_str,
+                    content_type = "application/json"
+                )
+
+"""
+    load player data from a certain year
+"""
+# TODO: still have to figure out the most efficient way to get all seasons of 
+def load_players(year = 2025):
+
+    NUM_LEAGUES_TO_CHECK = 50
+    STD_PIPELINE_BUCKET = 'tennis-etl-bucket'
+
+    bucket_ref = get_GCS_bucket(STD_PIPELINE_BUCKET)
+    if not bucket_ref:
+        print("ERROR: bucket could not be found")
+        raise ValueError("Bucket could not be found")
+    
+    leagues_checked = 0
+    limit = 50
+    offset = 0
+    valid_leagues = []
+    while leagues_checked < NUM_LEAGUES_TO_CHECK:
+        api_key = os.getenv("SPORT_DEVS_API_KEY")
+        leagues_rest_params = {
+            'ENDPOINT':'leagues',
+            'URL':'https://tennis.sportdevs.com/',
+            'headers':{
+                'Accept':'application/json',
+                'Authorization': 'Bearer '+api_key
+            },
+            'payload':{
+                'class_id':'eq.415', # ATP
+                'limit':limit,
+                offset:offset
+            }
+        }
+        leagues_data = send_requests(leagues_rest_params)
+        print("sent and retrieved leagues data")
+
+        for league in leagues_data:
+            league_date = league['']
 
 
+        leagues_checked += limit
 
-def sending_test():
-    league_id = 1942
+
+    
+
+
+    # keep league if last played within the given year
+
+     
+    
+
+
+def sending_test2():
     api_key = os.getenv("SPORT_DEVS_API_KEY")
-    season_rest_params = {
-        "ENDPOINT":"seasons",
+    teams_rest_params = {
+        "ENDPOINT":"teams",
         "payload":{
-            'league_id':f"eq.{league_id}",
-            # 'offset':2
+            # 'category_id':'eq.415', # ATP
         },
         "URL":'https://tennis.sportdevs.com/',
         'headers':{
@@ -405,10 +455,62 @@ def sending_test():
             'Authorization': "Bearer "+api_key
         }
     }
-    seasons_data = send_requests(season_rest_params)
+    player_data = send_requests(teams_rest_params)
 
     print('...')
-    for i in seasons_data:
+    for i in player_data:
+        print(i)
+        print('---')
+
+
+def sending_test():
+    league_id = 1942
+    api_key = os.getenv("SPORT_DEVS_API_KEY")
+    league_rest_params = {
+        "ENDPOINT":"leagues",
+        "payload":{
+            'class_id':'eq.415', # ATP
+            # 'offset':offset,
+            # 'limit':limit
+            # 'name':'like.*Wimbledon*'
+        },
+        "URL":'https://tennis.sportdevs.com/',
+        'headers':{
+            'Accept':'application/json',
+            'Authorization': "Bearer "+api_key
+        }
+    }
+    league_data = send_requests(league_rest_params)
+    print(league_data)
+
+    print('...')
+    for i in league_data:
+        print(i)
+        print('---')
+
+def sending_test3():
+    league_id = 1942
+    api_key = os.getenv("SPORT_DEVS_API_KEY")
+    league_rest_params = {
+        "ENDPOINT":"leagues-by-date",
+        "payload":{
+            'date':'eq.2025-08-13',
+            # 'class_id':'eq.415',
+            # 'offset':offset,
+            # 'limit':limit
+            # 'name':'like.*Wimbledon*'
+        },
+        "URL":'https://tennis.sportdevs.com/',
+        'headers':{
+            'Accept':'application/json',
+            'Authorization': "Bearer "+api_key
+        }
+    }
+    league_data = send_requests(league_rest_params)
+    print(league_data)
+
+    print('...')
+    for i in league_data[0]['leagues']:
         print(i)
         print('---')
 
@@ -448,8 +550,8 @@ def main():
     print("starting...")
     load_env()
 
-    # sending_test()
-    load_leagues()
+    sending_test()
+    # load_leagues()
     # retrieve_leagues()
     
 
