@@ -188,12 +188,16 @@ def send_requests(REST_params):
     #     print('---')
 
     # store response in a file
-    # STORAGE_FILE_NAME = f"store_{ENDPOINT}.json"
-    # with open(STORAGE_FILE_NAME, 'w') as f:
-    #     json.dump(json_response, f)
+    STORAGE_FILE_NAME = f"store_{ENDPOINT}.json"
+    with open(STORAGE_FILE_NAME, 'w') as f:
+        json.dump(json_response, f)
 
     return json_response
 
+    
+def retrieve_from_files(REST_params):
+
+    # parse ENDPOINT & find relevant REST params
     
 
 
@@ -551,6 +555,14 @@ def main():
     load_env()
 
     sending_test()
+
+
+    # TODO: start storing data in json files to avoid repeat requests
+    # create lookup function that can replace `send_requests`. 
+    # selects json files by http rest params.
+
+
+
     # load_leagues()
     # retrieve_leagues()
     
@@ -561,9 +573,6 @@ def main():
     # ranking_data = send_requests(REST_param_dict)
 
 
-    # TODO: load first 50 leagues, and upload to GCS bucket. 
-    # load first 50 leagues
-
 
     # upload_to_gcs("tennis-etl-bucket", "atp_rankings", ranking_data)
     # upload_to_gcs("test-bucket-bxkjxzk", "hello", "its_me")
@@ -573,9 +582,6 @@ def main():
 
 
     # engine = setup_postgres_db()
-
-    # TODO: upload ranking data in a way to make retrieving data from bucket easy
-    # b/c currently, data retrieved is a stringified array
 
     # TODO: add exception handling to upload code
 
