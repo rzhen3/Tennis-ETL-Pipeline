@@ -13,6 +13,7 @@ import psycopg2
 from google.api_core.exceptions import NotFound, Forbidden
 import traceback
 
+import response_cache
 
 """
     get basic credentials
@@ -198,7 +199,7 @@ def send_requests(REST_params):
 def retrieve_from_files(REST_params):
 
     # parse ENDPOINT & find relevant REST params
-    
+    pass
 
 
 def get_postgres_creds():
@@ -485,12 +486,15 @@ def sending_test():
         }
     }
     league_data = send_requests(league_rest_params)
-    print(league_data)
+    # print(league_data)
+    print("retrieved request.")
 
-    print('...')
-    for i in league_data:
-        print(i)
-        print('---')
+    response_cache.set(league_rest_params, league_data)
+    temp = response_cache.get(league_rest_params)
+    print('retrieved data from file')
+    # for i in temp:
+    #     print(i)
+    #     print('---')
 
 def sending_test3():
     league_id = 1942
@@ -553,6 +557,7 @@ def retrieve_seasons():
 def main():
     print("starting...")
     load_env()
+
 
     sending_test()
 

@@ -1,7 +1,11 @@
 import json
 import os.path
+import hashlib
 
 from collections.abc import Mapping
+
+def stable_hash(str_obj):
+    return hashlib.md5(str_obj.encode('utf-8')).hexdigest()
 
 
 def serialize_params(obj):
@@ -28,13 +32,17 @@ def set(params, response):
     file_name = None
     try:
         
-        file_name = serialize_params(params)
+        file_name = str(serialize_params(params))
+        file_name = stable_hash(file_name)
     except:
         print("Failed to serialize params.")
         return False
 
-    with open(f"./data/{file_name}", 'w') as file:
-        json.dump(response, file)
+    with open(f"./data/{file_name}.json", 'w') as file:
+        json.dump(response, file, 
+                  indent = 4, 
+                  sort_keys = True, 
+                  ensure_ascii = False)
 
     return True
 
@@ -42,7 +50,8 @@ def set(params, response):
 def get(params):
     file_name = None
     try:
-        file_name = serialize_params(params)
+        file_name = str(serialize_params(params))
+        file_name = stable_hash(file_name)
     except:
         print("Failed to serialize params.")
         return None
@@ -53,21 +62,28 @@ def get(params):
         print("Could not find file.")
         return None
     
-    
-    
+    with open(path_str, 'r') as file_data:
+        json_data = json.load(file_data)
 
-d = {
+        return json_data
+api_key = "1234"
+league_rest_params = {
+    "ENDPOINT":"leagues",
     "payload":{
-        "limit":"10",
-        "class_id":30
-    },"ENDPOINT":"leagues",
-    
+        'class_id':'eq.415', # ATP
+        # 'offset':offset,
+        # 'limit':limit
+        # 'name':'like.*Wimbledon*'
+    },
+    "URL":'https://tennis.sportdevs.com/',
+    'headers':{
+        'Accept':'application/json',
+        'Authorization': "Bearer "+api_key
+    }
 }
-print(compute_hash_rec(d))
-# for k, v in d.items():
-#     x = sorted((str(k), v))
-#     print(x)
-
-# return tuple(sorted(
-#     (str(k), compute_hash_rec(v)) for k, v in obj.items()
-# ))
+print(stable_hash(str(serialize_params(league_rest_params))))
+# print(hash(str(serialize_params(league_rest_params))))
+with open('./store_leagues.json', 'r') as f:
+    response = json.load(f)
+    set(league_rest_params, response)
+# print(type(str(serialize_params(league_rest_params))))
