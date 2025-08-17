@@ -1,0 +1,144 @@
+[
+    {
+        "flag": "united-cup",
+        "hash_image": "7d4fe0f11c694acd6b4c5e821be269013724bd59088cc0e87e5b957ff2bceba2",
+        "id": 420,
+        "importance": 1,
+        "name": "United Cup"
+    },
+    {
+        "alpha": "HR",
+        "flag": "croatia",
+        "hash_image": "142e00641e26fed58043aeeddb852e4bdf556edf426bc91df791a7466bad1081",
+        "id": 421,
+        "importance": 1,
+        "name": "Croatia"
+    },
+    {
+        "flag": "hopman-cup",
+        "hash_image": "c314420f93cac71f4ba31d753f7dd180748248aab1e65846227038f1c71011ae",
+        "id": 470,
+        "name": "Hopman Cup"
+    },
+    {
+        "flag": "legends",
+        "hash_image": "d85fd92575ddfadbaa8e2c92e9fac8a1a10ebd0e81bc2b8a34713b074c95568b",
+        "id": 471,
+        "name": "Legends"
+    },
+    {
+        "flag": "juniors",
+        "hash_image": "22caf7d58200784e5e97e1de44f7762555d438b5e6d29eb353de6bf5a6d5e78b",
+        "id": 472,
+        "name": "Juniors"
+    },
+    {
+        "flag": "exhibition",
+        "hash_image": "16bf541de4d46bd11f39dfcbd94b9ffe003fc54de17ef51207d7bd151d6df6ef",
+        "id": 478,
+        "name": "Exhibition"
+    },
+    {
+        "flag": "iptl",
+        "hash_image": "b3fbdeb6255ff71da0806c8ec727280157de52475c30bf6fcba60d549d415e7a",
+        "id": 482,
+        "name": "IPTL"
+    },
+    {
+        "flag": "simulated-reality",
+        "hash_image": "7fb6cb271efea830992c149345f035ddea979507c48b9265f6f30145d7664299",
+        "id": 506,
+        "name": "Simulated Reality"
+    },
+    {
+        "flag": "simulated-reality-women",
+        "hash_image": "1b8f4d7b8cebae5f930968ec962274a12e673c5ed9c933d34b045db819b5dfed",
+        "id": 508,
+        "name": "Simulated Reality Women"
+    },
+    {
+        "flag": "other",
+        "hash_image": "e497b385a9c3060139f221e1ff6365012ede97e02e0ccb7523ae8dde303f8613",
+        "id": 555,
+        "name": "Other"
+    },
+    {
+        "flag": "wheelchairs",
+        "hash_image": "308c8ea7fcf99f39134b61fc2a64f3b05d646b4ac5f5796dee02a9aa7e822466",
+        "id": 558,
+        "name": "Wheelchairs"
+    },
+    {
+        "flag": "wheelchairs-juniors",
+        "hash_image": "f7de7a3822fb9b5a274d790543382330596e9118a1b19939f4f84742f8b6557c",
+        "id": 559,
+        "name": "Wheelchairs Juniors"
+    },
+    {
+        "flag": "electronic-leagues",
+        "hash_image": "bfc26e67bb3359a2685e5c3148dad93bf53c155cb22307fe49dc03b9e075c355",
+        "id": 678,
+        "name": "Electronic Leagues"
+    },
+    {
+        "flag": "utr-men",
+        "hash_image": "4bf8c3cb5c2ffc8bc6b4e204dc253ec9644fdae9c49542fb5d92b8a43e62e226",
+        "id": 858,
+        "importance": 0,
+        "name": "UTR Men"
+    },
+    {
+        "flag": "utr-women",
+        "hash_image": "2824c72b9a5ff97196fccb0a3c6c99c7449e9041a833cf681a0184bee3725675",
+        "id": 859,
+        "importance": 0,
+        "name": "UTR Women"
+    },
+    {
+        "flag": "atf",
+        "hash_image": "d24bd4f0fd74049def1543aea5326b8c436103d68b38c2bbf9450d06c5117f76",
+        "id": 864,
+        "importance": 0,
+        "name": "ATF"
+    },
+    {
+        "alpha": "US",
+        "flag": "usa",
+        "hash_image": "ec96d1560ae35c94c8fc8b0b390dbb2cc6d2d7ad164f53386f7daa4b5a42f381",
+        "id": 879,
+        "importance": 0,
+        "name": "USA"
+    },
+    {
+        "alpha": "MX",
+        "flag": "mexico",
+        "hash_image": "820cf8af5cb8ae9e12eee5a5d0787d78ea53816761f221909cd003bdd4cc66d8",
+        "id": 890,
+        "importance": 0,
+        "name": "Mexico"
+    },
+    {
+        "alpha": "PT",
+        "flag": "portugal",
+        "hash_image": "1c6923353f62b46a23b9095bdf61c88e7f29cad87d9786d0c381f38a11233171",
+        "id": 894,
+        "importance": 0,
+        "name": "Portugal"
+    },
+    {
+        "alpha": "ES",
+        "flag": "spain",
+        "hash_image": "2f266534035ee51216f4ceb9643dfa0c2556102488fc78701a6b008bec416375",
+        "id": 906,
+        "importance": 0,
+        "name": "Spain"
+    },
+    {
+        "alpha": "IT",
+        "flag": "italy",
+        "hash_image": "0acc1e5f2bc238fab0c45e6faa8bc7dcc3b1b16e1ff857afa77c0cbbca76919b",
+        "id": 909,
+        "importance": 0,
+        "name": "Italy"
+    }
+]

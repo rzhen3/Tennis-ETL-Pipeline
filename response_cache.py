@@ -38,11 +38,11 @@ def set(params, response):
         print("Failed to serialize params.")
         return False
 
-    with open(f"./data/{file_name}.json", 'w') as file:
+    with open(f"./data/{file_name}.json", 'w', encoding = 'utf-8') as file:
         json.dump(response, file, 
                   indent = 4, 
                   sort_keys = True, 
-                  ensure_ascii = False)
+                  ensure_ascii = False,)
 
     return True
 
@@ -63,7 +63,7 @@ def get(params):
         print("Could not find file.")
         return None
     
-    with open(path_str, 'r') as file_data:
+    with open(path_str, 'r', encoding = 'utf-8') as file_data:
         json_data = json.load(file_data)
 
         return json_data

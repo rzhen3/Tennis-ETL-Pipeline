@@ -1,0 +1,58 @@
+[
+    {
+        "class_hash_image": "c3b0b1b9d3f39fe1d1e1341368600f2890018af9d178de97de57756e7b6646c0",
+        "class_id": 415,
+        "class_name": "ATP",
+        "current_champion_team_hash_image": "c4e567a1e26af2e2372dbac4e5f2dd0222edb8b91ee8fda6363003ceaedc915e",
+        "current_champion_team_id": 1216,
+        "current_champion_team_name": "M. Gonzalez / A. Molteni",
+        "current_champion_team_num_titles": 1,
+        "end_league": "2025-08-17T00:00:00+00:00",
+        "ground": "Hardcourt outdoor",
+        "hash_image": "37a602eda146971bfa51bf9ad15ae4e79dd8c44f5177e1882de8d3c7411f7b28",
+        "id": 2014,
+        "importance": 0,
+        "max_points": 1000,
+        "most_titles": 5,
+        "name": "Cincinnati, Doubles",
+        "number_of_sets": 3,
+        "primary_color": "#184d8c",
+        "secondary_color": "#4a8ec8",
+        "start_league": "2025-08-11T00:00:00+00:00",
+        "teams_most_titles": [
+            {
+                "team_hash_image": "dc2a450a815bc55b77d1fb778cdf590a2ff3b289c542961d9da5795aeaeb23f7",
+                "team_id": 1176,
+                "team_name": "B. Bryan / M. Bryan"
+            }
+        ]
+    },
+    {
+        "class_hash_image": "c3b0b1b9d3f39fe1d1e1341368600f2890018af9d178de97de57756e7b6646c0",
+        "class_id": 415,
+        "class_name": "ATP",
+        "current_champion_team_hash_image": "3cb747a994ac9fc7ee90feec55a2f540eac8637c268aeb91d4057039d551bc4e",
+        "current_champion_team_id": 1564,
+        "current_champion_team_name": "Jannik Sinner",
+        "current_champion_team_num_titles": 1,
+        "end_league": "2025-08-18T00:00:00+00:00",
+        "ground": "Hardcourt outdoor",
+        "hash_image": "fe4286c0b10a625501ffacc17faec221304e5f00840a9f1c852afe8175462764",
+        "id": 4494,
+        "importance": 0,
+        "max_points": 1000,
+        "most_titles": 7,
+        "name": "Cincinnati",
+        "number_of_sets": 3,
+        "primary_color": "#184d8c",
+        "secondary_color": "#4a8ec8",
+        "start_league": "2025-08-05T00:00:00+00:00",
+        "teams_most_titles": [
+            {
+                "team_hash_image": "c322a2b38c967f1ca407bd79fbc7a63d45370d5b77fb9145677792f3baa37eec",
+                "team_id": 1166,
+                "team_name": "Roger Federer"
+            }
+        ]
+    }
+]
