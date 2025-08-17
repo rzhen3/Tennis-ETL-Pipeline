@@ -1,0 +1,286 @@
+[
+    {
+        "class_hash_image": "c3b0b1b9d3f39fe1d1e1341368600f2890018af9d178de97de57756e7b6646c0",
+        "class_id": 415,
+        "class_name": "ATP",
+        "connected_leagues": [
+            {
+                "league_hash_image": "b9d67de1ce48ea9c8a681d7624fb267f13443caa21084ce743652423b93ec203",
+                "league_id": 1939,
+                "league_name": "Roland Garros"
+            }
+        ],
+        "current_champion_team_hash_image": "cbb02742855afb760d11e6c4a425a6e838ed22c8de31c3f0d4108fba86906973",
+        "current_champion_team_id": 1168,
+        "current_champion_team_name": "Carlos Alcaraz",
+        "current_champion_team_num_titles": 1,
+        "end_league": "2025-06-08T00:00:00+00:00",
+        "ground": "Red clay",
+        "hash_image": "8d3db60ab882af3443b112e59248c03600dc1eebafaeccf63966db79f9b3b8ac",
+        "id": 1942,
+        "importance": 0,
+        "max_points": 2000,
+        "most_titles": 14,
+        "name": "Roland Garros",
+        "number_of_sets": 5,
+        "primary_color": "#c85a19",
+        "secondary_color": "#01503d",
+        "start_league": "2025-05-19T00:00:00+00:00",
+        "teams_most_titles": [
+            {
+                "team_hash_image": "18a888dd212dc442bd4dce4d020f93bb34feb01132beb6c9ab83dd8781ec201a",
+                "team_id": 1137,
+                "team_name": "Rafael Nadal"
+            }
+        ]
+    },
+    {
+        "class_hash_image": "c3b0b1b9d3f39fe1d1e1341368600f2890018af9d178de97de57756e7b6646c0",
+        "class_id": 415,
+        "class_name": "ATP",
+        "current_champion_team_hash_image": "80c5d3e802bf883bb25bf25e896ef2b528259b9ad0330b57a0b3871f4cc31a91",
+        "current_champion_team_id": 97303,
+        "current_champion_team_name": "Ebden M / Peers J",
+        "end_league": "2024-08-03T00:00:00+00:00",
+        "ground": "Red clay",
+        "hash_image": "5b0a17d40ef5d8ff6f65673357d3176d8bc2a96b71491e719c4ea409ac5398e6",
+        "id": 1950,
+        "importance": 0,
+        "most_titles": 0,
+        "name": "Olympic Tournament, Doubles",
+        "number_of_sets": 3,
+        "start_league": "2024-07-27T00:00:00+00:00"
+    },
+    {
+        "class_hash_image": "c3b0b1b9d3f39fe1d1e1341368600f2890018af9d178de97de57756e7b6646c0",
+        "class_id": 415,
+        "class_name": "ATP",
+        "current_champion_team_hash_image": "9c76dd3e549138fe6ce9e328c0f395eb33efd771863c37badf94ff74d3fd7b77",
+        "current_champion_team_id": 1151,
+        "current_champion_team_name": "Gille S / Vliegen J",
+        "current_champion_team_num_titles": 1,
+        "end_league": "2023-01-07T00:00:00+00:00",
+        "ground": "Hardcourt outdoor",
+        "hash_image": "d7e9e018bdc3b323c9653cc1812a6a7f1641befbaae63d9f533536374a5d5fe9",
+        "id": 1954,
+        "importance": 0,
+        "max_points": 250,
+        "most_titles": 5,
+        "name": "Pune, Doubles",
+        "number_of_sets": 3,
+        "primary_color": "#ff9900",
+        "secondary_color": "#d98200",
+        "start_league": "2023-01-02T00:00:00+00:00",
+        "teams_most_titles": [
+            {
+                "team_hash_image": "7b3e6207cb06471c4f95e546fff39e45bc09617af9755ee4e7704a14f238f7fa",
+                "team_id": 1298,
+                "team_name": "Bhupathi M / Paes L"
+            }
+        ]
+    },
+    {
+        "class_hash_image": "c3b0b1b9d3f39fe1d1e1341368600f2890018af9d178de97de57756e7b6646c0",
+        "class_id": 415,
+        "class_name": "ATP",
+        "current_champion_team_hash_image": "83b3f1bd5431ebd3dedc1d2d58f204cefeeae7208c150700d80e549f8eb294f4",
+        "current_champion_team_id": 54592,
+        "current_champion_team_name": "S. Bolelli / A. Vavassori",
+        "current_champion_team_num_titles": 1,
+        "end_league": "2025-06-22T00:00:00+00:00",
+        "ground": "Grass",
+        "hash_image": "d545232c323110b9508b4dd2d61c6a85758e53a1defc0742c3f20fd2641f7d6d",
+        "id": 1956,
+        "importance": 0,
+        "max_points": 500,
+        "most_titles": 2,
+        "name": "Halle, Doubles",
+        "number_of_sets": 3,
+        "start_league": "2025-06-15T00:00:00+00:00",
+        "teams_most_titles": [
+            {
+                "team_hash_image": "d07098d42aa1059b43309e381486235a36bc1f015d5561938eb6b5a152747a04",
+                "team_id": 1159,
+                "team_name": "R. Klaasen / R. Ram"
+            },
+            {
+                "team_hash_image": "30d159bb5f8e7fc483a134319a96702c411768f6e67115f4810e60172c96930c",
+                "team_id": 1210,
+                "team_name": "L. Kubot / M. Melo"
+            }
+        ]
+    },
+    {
+        "class_hash_image": "c3b0b1b9d3f39fe1d1e1341368600f2890018af9d178de97de57756e7b6646c0",
+        "class_id": 415,
+        "class_name": "ATP",
+        "current_champion_team_hash_image": "f449e0547a5de71511ea94f8f48906d6c31d4c6e2c8ac0059591812aa26ff5d5",
+        "current_champion_team_id": 1162,
+        "current_champion_team_name": "Ram R / Salisbury J",
+        "current_champion_team_num_titles": 2,
+        "end_league": "2024-11-17T00:00:00+00:00",
+        "ground": "Hardcourt indoor",
+        "hash_image": "935e3774396904cb3acf14c39908619d5a6d249fb91a9d030c5217baffac50ca",
+        "id": 1960,
+        "importance": 0,
+        "name": "ATP Finals, Doubles",
+        "number_of_sets": 3,
+        "primary_color": "#3dbfed",
+        "secondary_color": "#017ccb",
+        "start_league": "2024-11-10T00:00:00+00:00"
+    },
+    {
+        "class_hash_image": "c3b0b1b9d3f39fe1d1e1341368600f2890018af9d178de97de57756e7b6646c0",
+        "class_id": 415,
+        "class_name": "ATP",
+        "current_champion_team_hash_image": "d211415238be8cd6cafdc8e782e006d01c9746bdced11fcab414833b61e18b91",
+        "current_champion_team_id": 329080,
+        "current_champion_team_name": "H. Heliovaara / H. Patten",
+        "current_champion_team_num_titles": 0,
+        "end_league": "2025-07-13T00:00:00+00:00",
+        "ground": "Grass",
+        "hash_image": "c635f15e08615d239fa9bdcec3e9063a11805f6616237a79bf83b932c2ef8ba2",
+        "id": 1966,
+        "importance": 0,
+        "max_points": 2000,
+        "most_titles": 6,
+        "name": "Wimbledon, Doubles",
+        "number_of_sets": 5,
+        "primary_color": "#006632",
+        "secondary_color": "#54008b",
+        "start_league": "2025-06-30T00:00:00+00:00",
+        "teams_most_titles": [
+            {
+                "team_hash_image": "3b2c00a559233280af9d1834ef6dd86884b84962b8a7315012b60e6ca29feaa2",
+                "team_id": 1172,
+                "team_name": "T. Woodbridge / M. Woodforde"
+            }
+        ]
+    },
+    {
+        "class_hash_image": "c3b0b1b9d3f39fe1d1e1341368600f2890018af9d178de97de57756e7b6646c0",
+        "class_id": 415,
+        "class_name": "ATP",
+        "current_champion_team_hash_image": "cbb02742855afb760d11e6c4a425a6e838ed22c8de31c3f0d4108fba86906973",
+        "current_champion_team_id": 1168,
+        "current_champion_team_name": "Carlos Alcaraz",
+        "current_champion_team_num_titles": 2,
+        "end_league": "2025-07-13T00:00:00+00:00",
+        "ground": "Grass",
+        "hash_image": "5ba258f24de72640546d92a6569f0a1c1880a5f801368084e32151a432a7f6a4",
+        "id": 1969,
+        "importance": 0,
+        "max_points": 2000,
+        "most_titles": 8,
+        "name": "Wimbledon",
+        "number_of_sets": 5,
+        "primary_color": "#006633",
+        "secondary_color": "#54008b",
+        "start_league": "2025-06-23T00:00:00+00:00",
+        "teams_most_titles": [
+            {
+                "team_hash_image": "c322a2b38c967f1ca407bd79fbc7a63d45370d5b77fb9145677792f3baa37eec",
+                "team_id": 1166,
+                "team_name": "Roger Federer"
+            }
+        ]
+    },
+    {
+        "class_hash_image": "c3b0b1b9d3f39fe1d1e1341368600f2890018af9d178de97de57756e7b6646c0",
+        "class_id": 415,
+        "class_name": "ATP",
+        "current_champion_team_hash_image": "c4e567a1e26af2e2372dbac4e5f2dd0222edb8b91ee8fda6363003ceaedc915e",
+        "current_champion_team_id": 1216,
+        "current_champion_team_name": "M. Gonzalez / A. Molteni",
+        "current_champion_team_num_titles": 1,
+        "end_league": "2025-08-17T00:00:00+00:00",
+        "ground": "Hardcourt outdoor",
+        "hash_image": "37a602eda146971bfa51bf9ad15ae4e79dd8c44f5177e1882de8d3c7411f7b28",
+        "id": 2014,
+        "importance": 0,
+        "max_points": 1000,
+        "most_titles": 5,
+        "name": "Cincinnati, Doubles",
+        "number_of_sets": 3,
+        "primary_color": "#184d8c",
+        "secondary_color": "#4a8ec8",
+        "start_league": "2025-08-11T00:00:00+00:00",
+        "teams_most_titles": [
+            {
+                "team_hash_image": "dc2a450a815bc55b77d1fb778cdf590a2ff3b289c542961d9da5795aeaeb23f7",
+                "team_id": 1176,
+                "team_name": "B. Bryan / M. Bryan"
+            }
+        ]
+    },
+    {
+        "class_hash_image": "c3b0b1b9d3f39fe1d1e1341368600f2890018af9d178de97de57756e7b6646c0",
+        "class_id": 415,
+        "class_name": "ATP",
+        "current_champion_team_hash_image": "e8cbed501dd39d931f56a293bc289c02d1fe95397146ae7ba83a54b0ed882374",
+        "current_champion_team_id": 1218,
+        "current_champion_team_name": "Russia",
+        "current_champion_team_num_titles": 1,
+        "end_league": "2022-01-10T00:00:00+00:00",
+        "ground": "Hardcourt outdoor",
+        "hash_image": "701547f5e8005033718a72a6ad692979a7006d3ceb333744cfada1e95daa1950",
+        "id": 2020,
+        "importance": 0,
+        "most_titles": 1,
+        "name": "ATP Cup",
+        "number_of_sets": 3,
+        "primary_color": "#1781ae",
+        "secondary_color": "#2dace3",
+        "start_league": "2021-12-31T00:00:00+00:00",
+        "teams_most_titles": [
+            {
+                "team_hash_image": "e8cbed501dd39d931f56a293bc289c02d1fe95397146ae7ba83a54b0ed882374",
+                "team_id": 1218,
+                "team_name": "Russia"
+            },
+            {
+                "team_hash_image": "979a3f8571195f7469c5a8f5fd13319e35354f8b2c55739c7ee38e2f754485e6",
+                "team_id": 1227,
+                "team_name": "Serbia"
+            }
+        ]
+    },
+    {
+        "class_hash_image": "c3b0b1b9d3f39fe1d1e1341368600f2890018af9d178de97de57756e7b6646c0",
+        "class_id": 415,
+        "class_name": "ATP",
+        "current_champion_team_hash_image": "3a8fcc6db7d83e8748313f402f57e67d7bc8f3358ae90cfac17229bb1bcb87e1",
+        "current_champion_team_id": 53851,
+        "current_champion_team_name": "Alejandro Tabilo",
+        "current_champion_team_num_titles": 1,
+        "end_league": "2025-06-28T00:00:00+00:00",
+        "ground": "Grass",
+        "hash_image": "60da0c82509774f715642c483184f625b4a268951f9a69b158667142ea7c1794",
+        "id": 2110,
+        "importance": 0,
+        "max_points": 250,
+        "most_titles": 1,
+        "name": "Mallorca",
+        "number_of_sets": 3,
+        "primary_color": "#2a929b",
+        "secondary_color": "#0168ba",
+        "start_league": "2025-06-21T00:00:00+00:00",
+        "teams_most_titles": [
+            {
+                "team_hash_image": "b6eea13ca0dc9dce20d5c9a0041cf7c965a3b35dde4d15e3fbcb1b56e5c602c9",
+                "team_id": 1347,
+                "team_name": "Stefanos Tsitsipas"
+            },
+            {
+                "team_hash_image": "f615da2e2e4ce75387d84e00208e0ac340be6a5738f651e965975c14ab268390",
+                "team_id": 1387,
+                "team_name": "Daniil Medvedev"
+            },
+            {
+                "team_hash_image": "3a8fcc6db7d83e8748313f402f57e67d7bc8f3358ae90cfac17229bb1bcb87e1",
+                "team_id": 53851,
+                "team_name": "Alejandro Tabilo"
+            }
+        ]
+    }
+]

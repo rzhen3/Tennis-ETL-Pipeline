@@ -136,10 +136,17 @@ def get_rest_params():
 
 
 '''
-    extract data from endpoint and return
+    return cached response if has been cached.
+    else, extract data from endpoint and return
 '''
 # TODO: add exception handling
 def send_requests(REST_params):
+
+    # check if response has been cached
+    cached_response = response_cache.get(REST_params)
+    if cached_response is not None:
+        return cached_response
+
     # extract data from endpoint
 
     URL = REST_params['URL']
@@ -160,46 +167,11 @@ def send_requests(REST_params):
     )
 
     json_response = response.json()
-    # print(json_response)
-    # print(len(json_response))
-    # print(json_response[0])
-    # print(json_response[0].keys())
-    # print(json_response[0]['tournaments'])
-    # print(json_response[0]['matches'][0].keys())
-
-
-    # for i, val in enumerate(json_response[0]['matches']):
-    #     print(i, val['name'], \
-    #           "t:",val['tournament_name'], \
-    #             "l:", val['league_name'], \
-    #                 "s:", val['season_name'])
-    #     print('---')
-
-    # for i, val in enumerate(json_response[0]['tournaments']):
-    #     print(i, val)
-    #     # print(i, val['name'])
-    #     print('---')
-
-    # for i, val in enumerate(json_response[0]['seasons']):
-    #     print(i, val)
-    #     print('---')
-
-    # for i, val in enumerate(json_response):
-    #     print(i, val)
-    #     print('---')
 
     # store response in a file
-    STORAGE_FILE_NAME = f"store_{ENDPOINT}.json"
-    with open(STORAGE_FILE_NAME, 'w') as f:
-        json.dump(json_response, f)
+    response_cache.set(REST_params, json_response)
 
     return json_response
-
-    
-def retrieve_from_files(REST_params):
-
-    # parse ENDPOINT & find relevant REST params
-    pass
 
 
 def get_postgres_creds():
@@ -223,45 +195,10 @@ def setup_postgres_db():
     engine = create_engine(connection_string, echo = True)
     return engine
 
-"""
-    [DEPR] upload blob_data to GCS Bucket
-"""
-def upload_to_gcs(bucket_name, blob_name, blob_data):
-    # TODO: need to setup 'gcloud auth application-default login' 
-    # as an airflow DAG
-    # TODO: continue setting up gcloud  
-
-    storage_client = storage.Client()
-
-    buckets = list(storage_client.list_buckets())
-
-    # scan visible buckets
-    bucket_ref = None
-    bucket_exists = False
-    for b in buckets:
-        print(b.name)
-        if b.name == bucket_name:
-            bucket_exists = True
-            bucket_ref = b
-            break
-
-    # create new bucket if it does not exist
-    if not bucket_exists:
-        bucket_ref = storage_client.create_bucket(bucket_name)
-        print(f"Bucket {bucket_ref.name} created")
-
-    blob_to_upload = bucket_ref.blob(blob_name)
-
-    blob_data_as_str = json.dumps(blob_data)
-
-    blob_to_upload.upload_from_string(blob_data_as_str, content_type = 'application/json')
-    print("uploaded data to GCS bucket...")
-    # blob_to_upload.upload_from_file(blob_data)
-    
-
 
 """
-    standard get GCS bucket by name
+    get bucket object if it exists
+    else, return None
 """
 def get_GCS_bucket(bucket_name):
     gcs_storage = storage.Client()
@@ -320,10 +257,11 @@ def read_data_from_bucket(bucket_name, blob_name):
 # TODO: add retry policy to http request sending
 # handle possible exceptions to request sending
 def load_leagues(offset = 0, limit = 50):
-
+    LEAGUE_TO_LOAD = 'eq.415'
     STD_PIPELINE_BUCKET = "tennis-etl-bucket"
+
     bucket_ref = get_GCS_bucket(STD_PIPELINE_BUCKET)
-    if not bucket_ref:
+    if bucket_ref is None:
         print("ERROR: Could not find bucket")
         raise ValueError(f"Could not find bucket {STD_PIPELINE_BUCKET}")
 
@@ -333,7 +271,7 @@ def load_leagues(offset = 0, limit = 50):
     league_rest_params = {
         "ENDPOINT":"leagues",
         "payload":{
-            'class_id':'eq.415', # ATP
+            'class_id':LEAGUE_TO_LOAD, # ATP
             'offset':offset,
             'limit':limit
         },
@@ -431,11 +369,14 @@ def load_players(year = 2025):
         leagues_data = send_requests(leagues_rest_params)
         print("sent and retrieved leagues data")
 
+        # retrieve season data for each league, and check if valid
+        leagues_added = 0
         for league in leagues_data:
             league_date = league['']
 
+            leagues_added+=1
 
-        leagues_checked += limit
+        leagues_checked += leagues_added
 
 
     
@@ -477,6 +418,7 @@ def sending_test():
             'class_id':'eq.415', # ATP
             # 'offset':offset,
             # 'limit':limit
+            'limit':10
             # 'name':'like.*Wimbledon*'
         },
         "URL":'https://tennis.sportdevs.com/',
@@ -492,9 +434,9 @@ def sending_test():
     response_cache.set(league_rest_params, league_data)
     temp = response_cache.get(league_rest_params)
     print('retrieved data from file')
-    # for i in temp:
-    #     print(i)
-    #     print('---')
+    for i in temp:
+        print(i)
+        print('---')
 
 def sending_test3():
     league_id = 1942

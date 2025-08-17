@@ -52,6 +52,7 @@ def get(params):
     try:
         file_name = str(serialize_params(params))
         file_name = stable_hash(file_name)
+        print(file_name)
     except:
         print("Failed to serialize params.")
         return None
@@ -81,9 +82,12 @@ league_rest_params = {
         'Authorization': "Bearer "+api_key
     }
 }
+
+# test set
 print(stable_hash(str(serialize_params(league_rest_params))))
-# print(hash(str(serialize_params(league_rest_params))))
 with open('./store_leagues.json', 'r') as f:
     response = json.load(f)
     set(league_rest_params, response)
-# print(type(str(serialize_params(league_rest_params))))
+
+# test get
+print(type(get(league_rest_params)))
