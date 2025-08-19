@@ -34,111 +34,6 @@ def load_env():
     return API_TENNIS, GOOGLE_GCS, SPORT_DEVS
 
 
-
-"""
-    configure REST request parameters
-"""
-def get_rest_params():
-
-    load_env()
-
-    api_key = os.getenv("SPORT_DEVS_API_KEY")
-
-    results_dict = dict()
-    results_dict['URL'] = 'https://tennis.sportdevs.com/' 
-    # FIRST PAYLOAD
-    # results_dict['ENDPOINT'] = 'rankings'
-    # results_dict['payload'] = {
-    #     'type':'atp',
-    #     'class':'now'
-    # }
-
-    # SECOND PAYLOAD
-    # results_dict['payload'] = {
-    #     'limit':35
-    # }
-    # results_dict['ENDPOINT'] = 'leagues'
-    results_dict['headers'] = {
-        'Accept':'application/json',
-        'Authorization': "Bearer " +api_key
-    }
-
-
-
-    # THIRD PAYLOAD
-    # results_dict['payload'] = {
-    #     'limit':35,
-        
-    #     # "leagueid":"2288"
-    # }
-    # results_dict['ENDPOINT'] = 'tournaments'
-
-    # FOURTH PAYLOAD
-    results_dict['payload'] = {
-        # 'league_id':'eq.2288',
-        # 'league_id':'eq.2601',
-        'league_id':'eq.2524',
-
-    }
-    results_dict['ENDPOINT'] = 'tournaments-by-league'
-
-
-
-    # FIFTH PAYLOAD
-    # results_dict['payload'] = {
-    #     'league_id':'eq.2524'
-    # }
-    # results_dict['ENDPOINT'] = 'seasons'
-
-    # results_dict['payload'] = {
-    #     'league_id': 'eq.2524'
-    # }
-    # results_dict['ENDPOINT'] = 'seasons-by-league'
-    
-
-    # ANOTHER PAYLOAD
-
-    # results_dict['payload'] = {
-    #     'league_id': 'eq.2524'
-    # }
-    # results_dict['ENDPOINT'] = 'leagues-info'
-
-
-    # results_dict['payload'] = {
-    #     # 'tournament_id':'eq.24091',
-    #     'tournament_id':'eq.24223'
-
-    # }
-    # results_dict['ENDPOINT'] = 'seasons-by-tournament'
-
-    results_dict['payload'] = {
-        'date': 'eq.2025-08-10',
-    }
-    results_dict['ENDPOINT'] = "matches-by-date"
-
-    results_dict['payload'] = {
-        'limit':30
-    }
-    results_dict['ENDPOINT'] = "classes"
-
-    results_dict['payload'] = {
-        # 'class_id':'eq.416',
-        'class_id':'eq.415',
-        # 'limit':200
-        'name':'like.*Toronto*'
-    }
-    results_dict['payload'] = {
-        # 'limit':200,
-        # 'offset':150,
-        'class_id':'eq.415'
-    }
-    results_dict['ENDPOINT'] = 'leagues'
-
-    return results_dict
-
-
-
-
 '''
     return cached response if has been cached.
     else, extract data from endpoint and return
@@ -227,16 +122,31 @@ def get_GCS_bucket(bucket_name):
 """
     standard upload json-dict to bucket
 """
-def upload_json_to_blob(prefix, json_dict, blob_name, bucket_name):
-    bucket_ref = get_GCS_bucket(bucket_name)
+def upload_json_to_blob(folder_prefix, json_dict, blob_name, bucket_ref,
+        no_replace = False
+    ):
 
-    blob_data_str = json.dumps(json_dict)
-    blob = bucket_ref.blob(f"{prefix}/{blob_name}")
+    blob_data_str = json.dumps(
+        json_dict,
+        sort_keys=True,
+        ensure_ascii=False
+    )
 
-    blob.upload_from_string(blob_data_str, content_type = 'application/json')
+    blob = bucket_ref.get_blob(blob_name)
+
+    if blob is not None:
+        return
+    
+    player_blob = bucket_ref.blob(blob_name)
+    blob = bucket_ref.blob(f"{folder_prefix}/{blob_name}")
+
+    blob.upload_from_string(
+        blob_data_str, 
+        content_type = 'application/json',
+    )
 
 
-def read_data_from_bucket(bucket_name, blob_name):
+def read_data_from_bucket(bucket_name, blob_name, **kwargs):
     
     bucket_ref = get_GCS_bucket(bucket_name)
     if not bucket_ref:
@@ -359,7 +269,7 @@ def load_players_from_leagues(seasons_lst):
             }
         }
         player_data = send_requests(player_rest_params)
-
+        players_lst.append(player_data['id'])
 
     return players_lst
 
@@ -368,7 +278,6 @@ def load_players_from_leagues(seasons_lst):
 
 """
     load player data from a certain year.
-
 """
 # TODO: CHANGE OF PLANS, just load players from standings/rankings. 
 # finding through leagues->seasons->matches/attendees->...
@@ -444,174 +353,49 @@ def load_all_players_from_year(query_year = 2025):
     load player data from rankings
 """
 # TODO: add exception/error handling
-def load_players():
-
-    api_key = os.getenv("SPORT_DEVS_API_KEY")
-    player_rest_params = {
-        'ENDPOINT':'rankings',
-        'URL':'https://tennis.sportdevs.com/',
-        'headers':{
-            'Accept':'application/json',
-            'Authorization': 'Bearer '+api_key
-        },
-        'payload':{
-            'type':'eq.atp', # ATP
-            'class':'eq.official',
-        }
-    }
-
-    player_data = send_requests(player_rest_params)
+def load_players(players_to_load = 50):
     
-    # upload all players to gcs bucket
-    bucket_ref = get_GCS_bucket(STD_PIPELINE_BUCKET)
+    players_loaded = 0
+    while players_loaded < players_to_load:
+        limit = min(50, players_to_load - players_loaded)
 
-    for player in player_data:
+        api_key = os.getenv("SPORT_DEVS_API_KEY")
+        player_rest_params = {
+            'ENDPOINT':'rankings',
+            'URL':'https://tennis.sportdevs.com/',
+            'headers':{
+                'Accept':'application/json',
+                'Authorization': 'Bearer '+api_key
+            },
+            'payload':{
+                'type':'eq.atp', # ATP
+                'class':'eq.official',
+                'limit':limit,
+                'offset':players_loaded,
+            }
+        }
 
-        PLAYER_BLOB_NAME = f"{player['team_id']}"
-
-        # check if bucket exists
-        player_blob = bucket_ref.get_blob(PLAYER_BLOB_NAME)
-        if player_blob is None:
-            player_blob = bucket_ref.blob(PLAYER_BLOB_NAME)
+        player_data = send_requests(player_rest_params)
         
-        player_json_str = json.dumps(player, 
-                                     sort_keys=True, 
-                                     ensure_ascii = False
-        )
-        player_blob.upload_from_string(player_json_str, 
-                                       content_type = 'application/json')
+        # upload all players to gcs bucket
+        bucket_ref = get_GCS_bucket(STD_PIPELINE_BUCKET)
+        FOLDER_PREFIX = "players"
 
-def sending_test2():
-    api_key = os.getenv("SPORT_DEVS_API_KEY")
-    teams_rest_params = {
-        "ENDPOINT":"teams",
-        "payload":{
-            # 'category_id':'eq.415', # ATP
-        },
-        "URL":'https://tennis.sportdevs.com/',
-        'headers':{
-            'Accept':'application/json',
-            'Authorization': "Bearer "+api_key
-        }
-    }
-    player_data = send_requests(teams_rest_params)
+        for player in player_data:
 
-    print('...')
-    for i in player_data:
-        print(i)
-        print('---')
+            PLAYER_BLOB_NAME = f"{FOLDER_PREFIX}/{player['team_id']}"
 
-
-def sending_test():
-    league_id = 1942
-    api_key = os.getenv("SPORT_DEVS_API_KEY")
-    INCLUDE = "Cinci"
-    EXCLUDE = "Double"
-    custom_regex = f"^(?!.*{EXCLUDE}).*{INCLUDE}.*$"
-    league_rest_params = {
-        "ENDPOINT":"leagues",
-        "payload":{
-            'class_id':'eq.415', # ATP
-            # 'offset':offset,
-            # 'limit':limit
-            # 'limit':10
-            'name':f'like.{custom_regex}'
-            # 'name':f"like.*Cinci*"
-        },
-        "URL":'https://tennis.sportdevs.com/',
-        'headers':{
-            'Accept':'application/json',
-            'Authorization': "Bearer "+api_key
-        }
-    }
-    league_data = send_requests(league_rest_params, with_cache=False)
-    print(league_data)
-    
-    # print(league_data)
-    # print("retrieved request.")
-
-    # print('retrieved data from file')
-    for i in league_data:
-        print(i)
-        print('---')
-
-def sending_test3():
-    league_id = 1942
-    api_key = os.getenv("SPORT_DEVS_API_KEY")
-    league_rest_params = {
-        "ENDPOINT":"leagues-by-date",
-        "payload":{
-            'date':'eq.2025-08-13',
-            # 'class_id':'eq.415',
-            # 'offset':offset,
-            # 'limit':limit
-            # 'name':'like.*Wimbledon*'
-        },
-        "URL":'https://tennis.sportdevs.com/',
-        'headers':{
-            'Accept':'application/json',
-            'Authorization': "Bearer "+api_key
-        }
-    }
-    league_data = send_requests(league_rest_params)
-    print(league_data)
-
-    print('...')
-    for i in league_data[0]['leagues']:
-        print(i)
-        print('---')
-
-
-def sending_test4():
-    api_key = os.getenv("SPORT_DEVS_API_KEY")
-    teams_rest_params = {
-        "ENDPOINT":"teams",
-        "payload":{
-            # 'date':'eq.2025-08-13',
-            # 'class_id':'eq.415',
-            # 'offset':offset,
-            # 'limit':limit
-            # 'name':'like.*Wimbledon*'
-            'class_id':'eq.415'
-        },
-        "URL":'https://tennis.sportdevs.com/',
-        'headers':{
-            'Accept':'application/json',
-            'Authorization': "Bearer "+api_key
-        }
-    }
-    data = send_requests(teams_rest_params)
-    print(data)
-
-    for i in data:
-        print(i)
-        print('---')
-
-def sending_test5():
-    api_key = os.getenv("SPORT_DEVS_API_KEY")
-    teams_rest_params = {
-        "ENDPOINT":"classes",
-        "payload":{
-            # 'date':'eq.2025-08-13',
-            # 'class_id':'eq.415',
-            # 'offset':offset,
-            'offset':10
-            # 'limit':limit
-            # 'name':'like.*Wimbledon*'
-            # 'class_id':'eq.415'
-        },
-        "URL":'https://tennis.sportdevs.com/',
-        'headers':{
-            'Accept':'application/json',
-            'Authorization': "Bearer "+api_key
-        }
-    }
-    data = send_requests(teams_rest_params)
-    print(data)
-
-    for i in data:
-        print(i)
-        print('---')
+            # check if bucket exists
+            player_blob = bucket_ref.get_blob(PLAYER_BLOB_NAME)
+            if player_blob is None:
+                player_blob = bucket_ref.blob(PLAYER_BLOB_NAME)
+            
+            player_json_str = json.dumps(player, 
+                                        sort_keys=True, 
+                                        ensure_ascii = False
+            )
+            player_blob.upload_from_string(player_json_str, 
+                                        content_type = 'application/json')
 
 
 
@@ -647,28 +431,13 @@ def main():
 
 
 
-    # TODO: start storing data in json files to avoid repeat requests
-    # create lookup function that can replace `send_requests`. 
-    # selects json files by http rest params.
-
 
 
     # load_leagues()
     # retrieve_leagues()
     
 
-
-    # REST_param_dict = get_rest_params()
-
     # ranking_data = send_requests(REST_param_dict)
-
-
-
-    # upload_to_gcs("tennis-etl-bucket", "atp_rankings", ranking_data)
-    # upload_to_gcs("test-bucket-bxkjxzk", "hello", "its_me")
-
-    # output = read_data_from_bucket("tennis-etl-bucket", "atp_rankings")
-    # print(type(output))
 
 
     # engine = setup_postgres_db()
@@ -679,3 +448,8 @@ def main():
     
 
 main()
+# TODO: add exception handling
+# TODO: setup GCS buckets with Terraform
+# TODO: add parallelism via futures/coroutines for sending/uploading
+# maybe through google cloud
+# TODO: 
