@@ -396,6 +396,8 @@ def load_players(players_to_load = 50):
             )
             player_blob.upload_from_string(player_json_str, 
                                         content_type = 'application/json')
+            
+            players_loaded +=1
 
 
 

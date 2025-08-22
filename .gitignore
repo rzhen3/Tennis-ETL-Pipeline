@@ -1,3 +1,4 @@
 .env
+.venv
 tennis-etl-env
 tennis-etl-pipeline
