@@ -2,3 +2,5 @@
 .venv
 tennis-etl-env
 tennis-etl-pipeline
+config/simple_auth_passwords.json
+./data/*

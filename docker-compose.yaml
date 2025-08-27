@@ -53,8 +53,11 @@ x-airflow-common:
   # build: .
   environment:
     &airflow-common-env
+    AIRFLOW__API__SECRET_KEY: 'my_super_secret_key'
 
-    AIRFLOW__WEBSERVER__SECRET_KEY: 'my_super_secret_key'
+    # airflow v3 setting user credentials
+    AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: "admin:admin"
+    AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_PASSWORDS_FILE: "/opt/airflow/config/simple_auth_passwords.json"
     AIRFLOW__API_AUTH__JWT_SECRET: 'blablab'
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__CORE__EXECUTION_API_SERVER_URL: 'http://airflow-apiserver:8080/execution/'
@@ -79,7 +82,8 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
-  user: "${AIRFLOW_UID:-50000}:0"
+  # user: "${AIRFLOW_UID:-50000}:0"   # disable on windows, run as as root
+  # above fixes DAG processor permissions error
   depends_on:
     &airflow-common-depends-on
     postgres:
@@ -93,7 +97,7 @@ services:
       POSTGRES_PASSWORD: airflow
       POSTGRES_DB: airflow
     volumes:
-      - postgres-db-volume:/var/lib/postgresql/data
+      - postgres-db-volume-etl:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "airflow"]
       interval: 10s
@@ -218,9 +222,11 @@ services:
     environment:
       <<: *airflow-common-env
       _AIRFLOW_DB_MIGRATE: 'true'
-      _AIRFLOW_WWW_USER_CREATE: 'true'
-      _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
-      _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
+
+      # remove below (artifact from previous airflow version)
+      # _AIRFLOW_WWW_USER_CREATE: 'true'
+      # _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
+      # _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
       _PIP_ADDITIONAL_REQUIREMENTS: ''
     user: "0:0"
     volumes:
@@ -240,4 +246,4 @@ services:
       - airflow
 
 volumes:
-  postgres-db-volume:
+  postgres-db-volume-etl: {}
