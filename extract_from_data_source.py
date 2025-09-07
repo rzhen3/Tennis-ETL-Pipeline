@@ -418,6 +418,155 @@ def retrieve_leagues():
         print('---')
 
 
+def test1():
+    api_key = os.getenv("SPORT_DEVS_API_KEY")
+    player_rest_params = {
+        'ENDPOINT':'rankings',
+        'URL':'https://tennis.sportdevs.com/',
+        'headers':{
+            'Accept':'application/json',
+            'Authorization': 'Bearer '+api_key
+        },
+        'payload':{
+            'type':'eq.atp', # ATP
+            'class':'eq.official',
+            'limit':50,
+            'offset':50,
+        }
+    }
+
+    player_data = send_requests(player_rest_params)
+    print(player_data)
+    for player in player_data:
+        print(player)
+        # print(player['team_name'])
+    # print(player_data)
+
+def test2():
+    api_key = os.getenv("SPORT_DEVS_API_KEY")
+    params = {
+        'ENDPOINT':'teams-seasons',
+        'URL':'https://tennis.sportdevs.com/',
+        'headers':{
+            'Accept':'application/json',
+            'Authorization': 'Bearer '+api_key
+        },
+        'payload':{
+            'team_id': 'eq.1564',
+            # 'limit':50,
+            # 'offset':50,
+        }
+    }
+
+    player_data = send_requests(params)
+    x = player_data[0]['tournaments'][0]['seasons']
+    for i in x:
+        print(i)
+    # print(player_data[0]['tournaments'])
+
+def test3():
+    api_key = os.getenv("SPORT_DEVS_API_KEY")
+    params = {
+        'ENDPOINT':'matches',
+        'URL':'https://tennis.sportdevs.com/',
+        'headers':{
+            'Accept':'application/json',
+            'Authorization': 'Bearer '+api_key
+        },
+        'payload':{
+            'home_team_id': 'eq.1564',
+            # 'limit':50,
+            # 'offset':50,
+        }
+    }
+
+    player_data = send_requests(params)
+    print(player_data)
+    # x = player_data[0]['tournaments'][0]['seasons']
+    # for i in x:
+    #     print(i)
+
+def test4():
+    api_key = os.getenv("SPORT_DEVS_API_KEY")
+    params = {
+        'ENDPOINT':'tournaments',
+        'URL':'https://tennis.sportdevs.com/',
+        'headers':{
+            'Accept':'application/json',
+            'Authorization': 'Bearer '+api_key
+        },
+        'payload':{
+            'id': 'eq.14443',
+            # 'limit':50,
+            # 'offset':50,
+        }
+    }
+
+    player_data = send_requests(params)
+    print(player_data)
+
+def test5():
+    api_key = os.getenv("SPORT_DEVS_API_KEY")
+    params = {
+        'ENDPOINT':'matches',
+        'URL':'https://tennis.sportdevs.com/',
+        'headers':{
+            'Accept':'application/json',
+            'Authorization': 'Bearer '+api_key
+        },
+        'payload':{
+            'tournament_id': 'eq.14443',
+            'home_team_id': 'eq.1564',
+            # 'limit':50,
+            'offset':1,
+        }
+    }
+
+    data = send_requests(params)
+    print(data)
+    # for i in data:
+    #     print(i)
+
+def test6():
+    api_key = os.getenv("SPORT_DEVS_API_KEY")
+    params = {
+        'ENDPOINT':'seasons-info',
+        'URL':'https://tennis.sportdevs.com/',
+        'headers':{
+            'Accept':'application/json',
+            'Authorization': 'Bearer '+api_key
+        },
+        'payload':{
+            'season_id':'eq.45525',
+            # 'limit':50,
+            'offset':1,
+        }
+    }
+
+    data = send_requests(params, with_cache = False)
+    print(data)
+
+def test7():
+    api_key = os.getenv("SPORT_DEVS_API_KEY")
+    params = {
+        'ENDPOINT':'leagues',
+        'URL':'https://tennis.sportdevs.com/',
+        'headers':{
+            'Accept':'application/json',
+            'Authorization': 'Bearer '+api_key
+        },
+        'payload':{
+            'name':'like.*French*',
+            'limit':50,
+        }
+    }
+
+    data = send_requests(params, with_cache = False)
+    # print(data)
+    for i in data:
+        print(i)
+        print('--\n')
+
 """
     retrieve seasons for leagues
 """
@@ -428,8 +577,11 @@ def main():
     print("starting...")
     load_env()
 
-    load_players()
+    test7()
+
+    # load_players()
     # sending_test()
+
 
 
 
@@ -449,7 +601,8 @@ def main():
     # TODO: setup GCS buckets with Terraform
     
 
-main()
+if __name__ == "__main__":
+    main()
 # TODO: add exception handling
 # TODO: setup GCS buckets with Terraform
 # TODO: add parallelism via futures/coroutines for sending/uploading
