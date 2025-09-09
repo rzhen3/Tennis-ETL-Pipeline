@@ -1,6 +1,7 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator, ShortCircuitOperator
 from airflow.decorators import task
+from airflow.models import Variable
 
 from dotenv import load_dotenv
 import requests
@@ -16,8 +17,7 @@ from google.cloud import storage
 from google.api_core.exceptions import NotFound, Forbidden
 
 
-# --- CONFIG ---
-
+# --- general variables ---
 def load_env():
 
     load_dotenv()
@@ -28,6 +28,16 @@ def load_env():
 
 
     return API_TENNIS, GOOGLE_GCS, SPORT_DEVS
+
+
+load_env()
+REPO_OWNER = os.getenv("REPO_OWNER")
+REPO_NAME = os.getenv("REPO_NAME")
+BRANCH = os.getenv("BRANCH")
+REPO_URL = f"https://github.com/{REPO_OWNER}/{REPO_NAME}/archive/refs/heads/{BRANCH}.zip"
+MANIFEST_VAR_NAME = f"manifest_{REPO_OWNER}-{REPO_NAME}"
+
+# --- DAG ---
 
 with DAG(
     dag_id = "github_csv_to_gcs",
@@ -40,14 +50,8 @@ with DAG(
         """
             Download Github branch archive as tempfile then return root
         """
-        load_env()
-
-        REPO_OWNER = os.getenv("REPO_OWNER")
-        REPO_NAME = os.getenv("REPO_NAME")
-        BRANCH = os.getenv("BRANCH")
 
 
-        REPO_URL = f"https://github.com/{REPO_OWNER}/{REPO_NAME}/archive/refs/heads/{BRANCH}.zip"
         response = requests.get(REPO_URL, timeout=120)
         response.raise_for_status()
         response_content = io.BytesIO(response.content)
@@ -99,8 +103,54 @@ with DAG(
             rel = str(p.relative_to(base))
             csv_indexer[rel] = hasher.hexdigest()
         
+        # store indexer locally
         return csv_indexer
+    
+    @task
+    def save_manifest(manifest, manifest_name = MANIFEST_VAR_NAME):
+        """
+            Saves manifest as Airflow Variable.
+        """
+        Variable.set(manifest_name, json.dumps(manifest, indent = 2))
 
 
     @task
-    def build_
+    def compare_with_manifest(csv_index, manifest_var = MANIFEST_VAR_NAME):
+        """
+            Compare current CSV indexer with last manifest.
+            Update only changed files.
+        """
+
+        try:
+            existing_manifest = json.loads(
+                Variable.get(manifest_var)
+            )
+        except Exception:
+            existing_manifest = {}
+
+        changed_csvs = [
+            path_str for path_str, digest in csv_index.items() 
+                   if existing_manifest[path_str] != digest
+        ]
+
+        merged_manifest = {
+            **existing_manifest,
+            **{
+                path_str: csv_index[path_str] for path_str in changed_csvs
+            }
+        }
+
+        return changed_csvs, merged_manifest
+    
+    @task
+    def upload_csvs_to_GCP_bucket():
+        pass
+
+    repo_path = fetch_repo()
+    csv_index = hash_csvs(repo_path)
+
+    changes_lst, new_manifest = compare_with_manifest(csv_index)
+    save_manifest(new_manifest)
+
+
+
