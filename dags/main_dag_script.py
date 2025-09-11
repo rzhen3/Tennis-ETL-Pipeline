@@ -4,7 +4,7 @@ from airflow.sdk.bases.sensor import PokeReturnValue
 from airflow.providers.standard.operators.python import PythonOperator
 import requests
 
-from extract_from_data_source import main as extract_main
+# from extract_from_data_source import main as extract_main
 
 @dag
 def load_application():
@@ -25,7 +25,8 @@ def load_application():
 
     @task
     def extract_data_from_api():
-        extract_main()
+        # extract_main()
+        pass
 
 
     @task
@@ -42,7 +43,9 @@ def load_application():
         pass
     
     
-    extract_data_from_api >> upload_to_gcs >> load_to_warehouse
+    # extract_data_from_api >> upload_to_gcs >> load_to_warehouse
+
+    
     # @task.sensor(poke_interval=30, timeout=300)
     # def is_api_available() -> PokeReturnValue:
     #     response = requests.get("https://raw.githubusercontent.com/marclamberti/datasets/refs/heads/main/fakeuser.json")

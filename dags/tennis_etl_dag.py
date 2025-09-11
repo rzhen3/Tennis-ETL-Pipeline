@@ -2,6 +2,7 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator, ShortCircuitOperator
 from airflow.decorators import task
 from airflow.models import Variable
+from airflow.providers.google.cloud.hooks.gcs import GCSHook
 
 from dotenv import load_dotenv
 import requests
@@ -140,16 +141,31 @@ with DAG(
             }
         }
 
-        return changed_csvs, merged_manifest
+        return {'changed_csvs':changed_csvs, 'merged_manifest':merged_manifest}
     
     @task
-    def upload_csvs_to_GCP_bucket():
+    def upload_csvs_to_GCP_bucket(changed_paths, bucket, bucket_prefix, gcp_conn_id):
+        """
+        Upload only new or updated CSVs into Bronze path.
+        """
+
+        if len(changed_paths) == 0:
+            return []
+        
+        hook = GCSHook(gcp_conn_id = gcp_conn_id)
+
+
+        
+
+
         pass
 
     repo_path = fetch_repo()
     csv_index = hash_csvs(repo_path)
 
-    changes_lst, new_manifest = compare_with_manifest(csv_index)
+    cmp = compare_with_manifest(csv_index)
+    changes_lst = cmp['changed_csvs']
+    new_manifest = cmp['merged_manifest']
     save_manifest(new_manifest)
 
 
