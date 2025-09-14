@@ -5,3 +5,4 @@ tennis-etl-pipeline
 config/simple_auth_passwords.json
 data/*
 keys/*
+logs/*

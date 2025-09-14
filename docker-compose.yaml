@@ -88,8 +88,12 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
     - ${AIRFLOW_PROJ_DIR:-.}/keys:/opt/airflow/keys:ro
+    - ${AIRFLOW_PROJ_DIR:-.}/secrets:/opt/airflow/secrets:ro
   # user: "${AIRFLOW_UID:-50000}:0"   # disable on windows, run as as root
   # above fixes DAG processor permissions error
+
+  env_file:
+    - ./secrets/.env
   depends_on:
     &airflow-common-depends-on
     postgres:

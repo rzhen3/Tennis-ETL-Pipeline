@@ -4,10 +4,13 @@ from airflow.decorators import task
 from airflow.models import Variable
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 
+import logging
+
 from dotenv import load_dotenv
 import requests
 import os
 from pathlib import Path
+import datetime as dt
 import io
 import json
 import tempfile
@@ -21,7 +24,9 @@ from google.api_core.exceptions import NotFound, Forbidden
 # --- general variables ---
 def load_env():
 
-    load_dotenv()
+    logging.info(f"my current path is:{os.getcwd()}")
+
+    load_dotenv(f"{os.getcwd()}/secrets/.env")
 
     API_TENNIS = os.getenv('API_TENNIS_API_KEY')
     GOOGLE_GCS = os.getenv('GOOGLE_GCS_API_KEY')
@@ -144,7 +149,7 @@ with DAG(
         return {'changed_csvs':changed_csvs, 'merged_manifest':merged_manifest}
     
     @task
-    def upload_csvs_to_GCP_bucket(changed_paths, bucket, bucket_prefix, gcp_conn_id):
+    def upload_csvs_to_GCP_bucket(changed_paths, repo_path, bucket_prefix, bucket_name, gcp_conn_id):
         """
         Upload only new or updated CSVs into Bronze path.
         """
@@ -153,20 +158,35 @@ with DAG(
             return []
         
         hook = GCSHook(gcp_conn_id = gcp_conn_id)
+        date_str = dt.date.today().isoformat()
+        dest_prefix = f"{bucket_prefix}/dt={date_str}"
+
+        uploaded_csvs = []
+
+        for rel in changed_paths:
+            src = Path(repo_path) / rel
+
+            blob_name = f"{dest_prefix}{src.name}"
 
 
-        
+            hook.upload(
+                bucket_name = bucket_name,
+                object_name = blob_name,
+                filename = str(src),
+                mime_type = "text/csv",
+            )
 
+            uploaded_csvs.append(f"gs://{bucket_name}/{blob_name}")
 
-        pass
+        return uploaded_csvs
 
     repo_path = fetch_repo()
     csv_index = hash_csvs(repo_path)
 
-    cmp = compare_with_manifest(csv_index)
-    changes_lst = cmp['changed_csvs']
-    new_manifest = cmp['merged_manifest']
-    save_manifest(new_manifest)
+    # cmp = compare_with_manifest(csv_index)
+    # changes_lst = cmp['changed_csvs']
+    # new_manifest = cmp['merged_manifest']
+    # save_manifest(new_manifest)
 
 
 
