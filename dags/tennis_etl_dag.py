@@ -1,8 +1,10 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator, ShortCircuitOperator
 from airflow.decorators import task
-from airflow.models import Variable
+# from airflow.models import Variable
+from airflow.sdk import Variable
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
+# from airflow.utils.context import get_current_context
 
 import logging
 
@@ -18,8 +20,11 @@ import zipfile
 import hashlib
 from google.cloud import storage
 
+
 from google.api_core.exceptions import NotFound, Forbidden
 
+# TODO: error/exception handling
+# TODO: scheduled checks for updates in github
 
 # --- general variables ---
 def load_env():
@@ -40,8 +45,12 @@ load_env()
 REPO_OWNER = os.getenv("REPO_OWNER")
 REPO_NAME = os.getenv("REPO_NAME")
 BRANCH = os.getenv("BRANCH")
+BUCKET_NAME = os.getenv("BUCKET_NAME")
 REPO_URL = f"https://github.com/{REPO_OWNER}/{REPO_NAME}/archive/refs/heads/{BRANCH}.zip"
-MANIFEST_VAR_NAME = f"manifest_{REPO_OWNER}-{REPO_NAME}"
+MANIFEST_VAR_NAME = f"AIRFLOW_VAR_MANIFEST_{REPO_OWNER}_{REPO_NAME}"
+GCP_CONN_ID = "google_cloud_default"
+BRONZE_BASE_NAME = f"bronze/source=github/owner={REPO_OWNER}/repo={REPO_NAME}/ref={BRANCH}"
+
 
 # --- DAG ---
 
@@ -120,7 +129,7 @@ with DAG(
         Variable.set(manifest_name, json.dumps(manifest, indent = 2))
 
 
-    @task
+    @task(multiple_outputs = True)
     def compare_with_manifest(csv_index, manifest_var = MANIFEST_VAR_NAME):
         """
             Compare current CSV indexer with last manifest.
@@ -136,9 +145,10 @@ with DAG(
 
         changed_csvs = [
             path_str for path_str, digest in csv_index.items() 
-                   if existing_manifest[path_str] != digest
+                   if (not path_str in existing_manifest) or existing_manifest[path_str] != digest
         ]
 
+        logging.info(f"currently saved changed_csvs: {changed_csvs}")
         merged_manifest = {
             **existing_manifest,
             **{
@@ -149,7 +159,10 @@ with DAG(
         return {'changed_csvs':changed_csvs, 'merged_manifest':merged_manifest}
     
     @task
-    def upload_csvs_to_GCP_bucket(changed_paths, repo_path, bucket_prefix, bucket_name, gcp_conn_id):
+    def upload_csvs_to_GCP_bucket(changed_paths, repo_path, 
+                                  bucket_prefix = BRONZE_BASE_NAME, 
+                                  bucket_name = BUCKET_NAME,
+                                gcp_conn_id = GCP_CONN_ID):
         """
         Upload only new or updated CSVs into Bronze path.
         """
@@ -159,6 +172,7 @@ with DAG(
         
         hook = GCSHook(gcp_conn_id = gcp_conn_id)
         date_str = dt.date.today().isoformat()
+        # date_str = get_current_context()['ds']
         dest_prefix = f"{bucket_prefix}/dt={date_str}"
 
         uploaded_csvs = []
@@ -166,7 +180,7 @@ with DAG(
         for rel in changed_paths:
             src = Path(repo_path) / rel
 
-            blob_name = f"{dest_prefix}{src.name}"
+            blob_name = f"{dest_prefix}/{src.name}"
 
 
             hook.upload(
@@ -180,13 +194,16 @@ with DAG(
 
         return uploaded_csvs
 
-    repo_path = fetch_repo()
-    csv_index = hash_csvs(repo_path)
+    local_repo_path = fetch_repo()
+    csv_index = hash_csvs(local_repo_path)
 
-    # cmp = compare_with_manifest(csv_index)
-    # changes_lst = cmp['changed_csvs']
-    # new_manifest = cmp['merged_manifest']
-    # save_manifest(new_manifest)
+    cmp = compare_with_manifest(csv_index)
+    changes_lst = cmp['changed_csvs']
+    new_manifest = cmp['merged_manifest']
+    save_manifest(new_manifest)
+
+    upload_csvs_to_GCP_bucket(changes_lst, local_repo_path)
+    print(changes_lst)
 
 
 
