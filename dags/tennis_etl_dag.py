@@ -4,6 +4,8 @@ from airflow.decorators import task
 # from airflow.models import Variable
 from airflow.sdk import Variable
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
+from airflow.providers.google.cloud.operators.dataproc import DataprocSubmitJobOperator, DataprocCreateBatchOperator
+from airflow.datasets import Dataset
 # from airflow.utils.context import get_current_context
 
 import logging
@@ -51,6 +53,8 @@ MANIFEST_VAR_NAME = f"AIRFLOW_VAR_MANIFEST_{REPO_OWNER}_{REPO_NAME}"
 GCP_CONN_ID = "google_cloud_default"
 BRONZE_BASE_NAME = f"bronze/source=github/owner={REPO_OWNER}/repo={REPO_NAME}/ref={BRANCH}"
 
+BRONZE_DATASET = Dataset(f"gs://{BUCKET_NAME}/{BRONZE_BASE_NAME}/")
+ARTIFACT_DATASET = Dataset(f"gs://...")     # need to add
 
 # --- DAG ---
 
@@ -58,15 +62,27 @@ with DAG(
     dag_id = "github_csv_to_gcs",
     tags = ['bronze', 'github', 'gcs']
 ) as dag:
-    
+    @task
+    def ensure_bucket(bucket, project_name, gcp_conn_id = GCP_CONN_ID):
+
+
+        hook = GCSHook(gcp_conn_id = gcp_conn_id)
+
+        if hook.exists(bucket_name = bucket):
+            return
+        
+        hook.create_bucket(
+            bucket_name = bucket,
+            storage_class = "STANDARD",
+            location = "US",
+            project_id = project_name
+        )
 
     @task
     def fetch_repo():
         """
             Download Github branch archive as tempfile then return root
         """
-
-
         response = requests.get(REPO_URL, timeout=120)
         response.raise_for_status()
         response_content = io.BytesIO(response.content)
@@ -158,7 +174,7 @@ with DAG(
 
         return {'changed_csvs':changed_csvs, 'merged_manifest':merged_manifest}
     
-    @task
+    @task(outlets=[BRONZE_DATASET])
     def upload_csvs_to_GCP_bucket(changed_paths, repo_path, 
                                   bucket_prefix = BRONZE_BASE_NAME, 
                                   bucket_name = BUCKET_NAME,
@@ -182,7 +198,7 @@ with DAG(
 
             blob_name = f"{dest_prefix}/{src.name}"
 
-
+            # upload blob via hook
             hook.upload(
                 bucket_name = bucket_name,
                 object_name = blob_name,
@@ -193,15 +209,50 @@ with DAG(
             uploaded_csvs.append(f"gs://{bucket_name}/{blob_name}")
 
         return uploaded_csvs
+    
+    @task
+    def upload_jobs_to_GCP_bucket(bucket_prefix = ARTIFACT_BASE_NAME, bucket_name = ARTIFACT_NAME, gcp_conn_id = GCP_CONN_ID):
+        hook = GCSHook(gcp_conn_id = gcp_conn_id)
 
+
+
+        pass
+    
+    dataproc_task = DataprocCreateBatchOperator(
+        task_id = "csv_to_staging",
+        project_id = "tennis-etl-pipeline",
+        region = "...",
+        batch = {
+            "pyspark-batch":{
+                "main_python_file_uri":...,
+                "python_file_uris":...,
+                "args": [
+                    ...
+                ],
+                "runtime_config": {...},
+                "environment_config": {
+                    "execution_config": {...},
+                },
+
+            }
+        },
+        batch_id = ...,
+    )
+
+
+
+
+    # fetch repo and index CSVs
     local_repo_path = fetch_repo()
     csv_index = hash_csvs(local_repo_path)
 
+    # create manifest for changes
     cmp = compare_with_manifest(csv_index)
     changes_lst = cmp['changed_csvs']
     new_manifest = cmp['merged_manifest']
     save_manifest(new_manifest)
 
+    # upload to GCP
     upload_csvs_to_GCP_bucket(changes_lst, local_repo_path)
     print(changes_lst)
 
