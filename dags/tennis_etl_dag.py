@@ -53,6 +53,8 @@ MANIFEST_VAR_NAME = f"AIRFLOW_VAR_MANIFEST_{REPO_OWNER}_{REPO_NAME}"
 GCP_CONN_ID = "google_cloud_default"
 BRONZE_BASE_NAME = f"bronze/source=github/owner={REPO_OWNER}/repo={REPO_NAME}/ref={BRANCH}"
 
+ARTIFACT_NAME = f"artifacts"
+
 BRONZE_DATASET = Dataset(f"gs://{BUCKET_NAME}/{BRONZE_BASE_NAME}/")
 ARTIFACT_DATASET = Dataset(f"gs://...")     # need to add
 
@@ -211,12 +213,34 @@ with DAG(
         return uploaded_csvs
     
     @task
-    def upload_jobs_to_GCP_bucket(bucket_prefix = ARTIFACT_BASE_NAME, bucket_name = ARTIFACT_NAME, gcp_conn_id = GCP_CONN_ID):
+    def upload_jobs_to_GCP_bucket(bucket_name = ARTIFACT_NAME, gcp_conn_id = GCP_CONN_ID):
         hook = GCSHook(gcp_conn_id = gcp_conn_id)
 
+        uploads = []
+        artifact_dir = Path("./artifacts")
+        subdirs = ["jobs", "wheels", "configs"]
+        
+        for subdir in subdirs:
+
+            full_path = artifact_dir / subdir
+            for file in full_path.iterdir():
+                if file.is_file():
+                    full_bucket_path = f"{bucket_name}/{subdir}"
+
+                    # upload 
+                    file_path = Path(file.cwd()) / file.name 
+                    blob_name = f"artifacts/{file.name}"
+                    hook.upload(
+                        bucket_name = full_bucket_path,
+                        object_name = blob_name,
+                        filename = str(file_path),
+                        mime_type = "text/csv",
+                    )
+
+                    uploads.append(file_path)
 
 
-        pass
+        return uploads
     
     dataproc_task = DataprocCreateBatchOperator(
         task_id = "csv_to_staging",

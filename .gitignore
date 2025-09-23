@@ -6,3 +6,4 @@ config/simple_auth_passwords.json
 data/*
 keys/*
 logs/*
+artifacts/wheels/*
