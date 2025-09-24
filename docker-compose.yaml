@@ -89,6 +89,7 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
     - ${AIRFLOW_PROJ_DIR:-.}/keys:/opt/airflow/keys:ro
     - ${AIRFLOW_PROJ_DIR:-.}/secrets:/opt/airflow/secrets:ro
+    - ${AIRFLOW_PROJ_DIR:-.}/artifacts:/opt/airflow/artifacts:ro
   # user: "${AIRFLOW_UID:-50000}:0"   # disable on windows, run as as root
   # above fixes DAG processor permissions error
 
