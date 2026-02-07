@@ -62,7 +62,10 @@ ARTIFACT_DATASET = Dataset(f"gs://...")     # need to add
 
 with DAG(
     dag_id = "github_csv_to_gcs",
-    tags = ['bronze', 'github', 'gcs']
+    tags = ['bronze', 'github', 'gcs'],
+    schedule_interval = "0 2 * * 0",
+    start_date = dt(2025, 2, 1),
+    catchup = False
 ) as dag:
     @task
     def ensure_bucket(bucket, project_name, gcp_conn_id = GCP_CONN_ID):
