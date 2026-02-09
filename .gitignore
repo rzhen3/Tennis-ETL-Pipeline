@@ -6,5 +6,6 @@ config/simple_auth_passwords.json
 data/*
 keys/*
 logs/*
+analysis/*.csv
 artifacts/wheels/*
 __pycache__/*
