@@ -1,74 +1,23 @@
-from pyspark.sql import SparkSession, DataFrame
-from pyspark.sql import functions as F
-from pyspark.sql import types as T
+"""
+file superseded by etl_utils wheel package.
+source code now lives at:
+    artifacts/etl_utils_pkg/src/etl_utils/
 
-PROJECT_ID = "tennis-etl-pipeline"
-DATASET = "tennis_raw"
-TEMP_GCS_BUCKET = "tennis-etl-bucket"
+build wheel:
+    ./scripts/build_wheel.sh
 
-def get_spark_session(app_name: str) -> SparkSession:
-    """
-    build pre-configured SparkSession for BigQuery writes
+installing locally:
+pip install -e ./artifacts/etl_utils_pkg[dev]
 
-    """
+"""
 
-    return (
-        SparkSession.builder
-        .appName(app_name)
-        .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
-        .config("temporaryGcsBucket", TEMP_GCS_BUCKET)
-        .config("parentProject", PROJECT_ID)
-        .getOrCreate()
+try:
+    from etl_utils._core import *
+
+except ImportError:
+    raise ImportError(
+        "etl_utils package not found. Either:\n"
+        "  1. Install the wheel: pip install ./artifacts/etl_utils_pkg\n"
+        "  2. Build and install: ./scripts/build_wheel.sh && "
+        "pip install artifacts/wheels/etl_utils-*.whl\n"
     )
-
-def trim_string_columns(df: DataFrame) -> DataFrame:
-    """
-    trim leading/trailing whitespace from df string columns
-    """
-
-    for field in df.schema.fields:
-        if isinstance(field.dataType, T.StringType):
-            df = df.withColumn(field.name, F.trim(F.col(field.name)))
-
-    return df
-
-def nullify_empty_strings(df: DataFrame) -> DataFrame:
-    """
-    convert empty strings '' to proper NULL values.
-    """
-
-    for field in df.schema.fields:
-        if isinstance(field.dataType, T.StringType):
-            df = df.withColumn(
-                field.name,
-                F.when(F.col(field.name) == "", None).otherwise(F.col(field.name))
-            )
-
-    return df
-
-def add_audit_columns(df: DataFrame, source_file: str) -> DataFrame:
-    """
-    append standard audit columns that every table needs
-    """
-
-    return (
-        df
-        .withColumn("source_file", F.lit(source_file))
-        .withColumn("loaded_at", F.current_timestamp())
-        .withColumn("updated_at", F.current_timestamp())
-    )
-
-def write_to_bigquery(df: DataFrame, table: str, mode: str = 'overwrite'):
-    """
-    write DataFrame to bigquery via the spark-bigquery-connector
-    """
-    (
-        df.write
-        .format("bigquery")
-        .option("table", f"{PROJECT_ID}.{table}")
-        .option("writeMethod", "direct")
-        .mode(mode)
-        .save()
-    )
-
-    

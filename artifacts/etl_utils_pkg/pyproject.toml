@@ -1,0 +1,23 @@
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "etl_utils"
+version = "0.1.0"
+description = "shared utilities for tennis ETL PySpark jobs"
+requires-python = ">=3.11"
+
+
+# note: pyspark already installed on dataproc serverless
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pyspark>=3.5.0",
+    "pytest>=8.0"
+]
+
+# recommended best practice by PyPA
+# forces package install before importing
+# otherwise, might import local directory instead of installed package
+[tool.setuptools.packages.find]
+where = ["src"]

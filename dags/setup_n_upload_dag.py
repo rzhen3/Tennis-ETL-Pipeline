@@ -282,6 +282,3 @@ with DAG(
     # upload to GCP
     upload_csvs_to_GCP_bucket(changes_lst, local_repo_path)
     print(changes_lst)
-
-
-
