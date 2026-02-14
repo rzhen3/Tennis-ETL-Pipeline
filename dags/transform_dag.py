@@ -78,9 +78,10 @@ def sanitize_batch_id(raw_id: str) -> str:
     return sanitized
 
 # input paths for jobs. auto-fill with logical date
-PLAYERS_INPUT = f"gs://{BUCKET_NAME}/{BRONZE_BASE}/dt={{{ ds }}}/atp_players.csv"
-MATCHES_INPUT = f"gs://{BUCKET_NAME}/{BRONZE_BASE}/dt={{{{ ds }}}}/atp_matches_*.csv"
-RANKINGS_INPUT = f"gs://{BUCKET_NAME}/{BRONZE_BASE}/dt={{{{ ds }}}}/atp_rankings_*.csv"
+_BRONZE_PREFIX = f"gs://{BUCKET_NAME}/{BRONZE_BASE}/dt="
+PLAYERS_INPUT = _BRONZE_PREFIX + "{{ ds }}/atp_players.csv"
+MATCHES_INPUT = _BRONZE_PREFIX + "{{ ds }}/atp_matches_*.csv"
+RANKINGS_INPUT = _BRONZE_PREFIX + "{{ ds }}/atp_rankings_*.csv"
 
 MATCH_STATS_INPUT = MATCHES_INPUT
 
