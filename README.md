@@ -1,4 +1,8 @@
 # Tennis-ETL-Pipeline
+
+bootup:
+docker-compose up -d
+
 reminders:
 
 setup google auth `gcloud auth application-default login`

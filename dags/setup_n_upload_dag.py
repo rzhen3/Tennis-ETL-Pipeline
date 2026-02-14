@@ -63,8 +63,8 @@ ARTIFACT_DATASET = Dataset(f"gs://...")     # need to add
 with DAG(
     dag_id = "github_csv_to_gcs",
     tags = ['bronze', 'github', 'gcs'],
-    schedule_interval = "0 2 * * 0",
-    start_date = dt(2025, 2, 1),
+    schedule = "0 2 * * 0",
+    start_date = dt.datetime(2025, 2, 1),
     catchup = False
 ) as dag:
     @task
