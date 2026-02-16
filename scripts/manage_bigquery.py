@@ -177,6 +177,61 @@ def cmd_create(client: bigquery.Client, **kwargs):
         print(f"  - {table.table_id}")
 
 
+def cmd_recreate(client: bigquery.Client, **kwargs):
+    """
+    drop all tables then re-run DDL - a full schema reset.
+    """
+    if not confirm("This will DROP ALL TABLES then recreate them from the DDL file"):
+        print("Aborted.")
+        return
+    
+    print("\nDropping all tables...")
+
+    # drop all tables that are managed
+    for table_name in TABLE_ORDER:
+        full_id = get_full_table_id(table_name)
+        try:
+            client.delete_table(full_id, not_found_ok=True)
+            print(f"Dropped {table_name}")
+
+        except Exception as e:
+            print(f"ERROR: {table_name}: {e}")
+
+    print("\nRecreating schema...")
+    cmd_create(client)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description = "BigQuery schema management CLI for Tennis ETL Pipeline",
+        formatter_class = argparse.RawDescriptionHelpFormatter,
+        epilog = """
+commands:
+    status      show row counts, sizes, and last modified times
+    truncate    delete all rows (keep table schema)
+    drop        drop tables entirely
+    create      run DDL file (CREATE IF NOT EXSITS - safe to repeat)
+    recreate    drop all tables, then re-run DDL (full reset)
+
+examples:
+    python scripts/manage_bigquery.py status
+    python scripts/manage_bigquery.py truncate --tables fact_matches fact_match_stats
+    python scripts/manage_bigquery.py recreate
+"""
+    )
+
+    args = parser.parser_args()
+
+    commands = {
+        "status":   cmd_status,
+        "truncate": cmd_truncate,
+        "drop":     cmd_drop,
+        "create":   cmd_create,
+        "recreate": cmd_recreate,
+    }
+
+    client = get_client()
+    commands[args.command](client, tables=args.tables)
 
 
 if __name__ == "__main__":
