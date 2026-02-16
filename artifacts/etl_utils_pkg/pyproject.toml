@@ -2,7 +2,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "etl_utils"
-version = "0.1.0"
+version = "0.1.1"
 description = "shared utilities for tennis ETL PySpark jobs"
 requires-python = ">=3.11"
 

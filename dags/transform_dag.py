@@ -28,7 +28,7 @@ BRONZE_BASE = f"bronze/source=github/owner={REPO_OWNER}/repo={REPO_OWNER}/ref={B
 ARTIFACTS_BASE = "artifacts"
 
 JOBS_URI = f"gs://{BUCKET_NAME}/{ARTIFACTS_BASE}/jobs"
-WHEEL_URI = f"gs://{BUCKET_NAME}/{ARTIFACTS_BASE}/wheels/etl_utils-0.1.0-py3-none-any.whl"
+WHEEL_URI = f"gs://{BUCKET_NAME}/{ARTIFACTS_BASE}/wheels/etl_utils-0.1.1-py3-none-any.whl"
 
 BRONZE_DATASET = Dataset(f"gs://{BUCKET_NAME}/{BRONZE_BASE}")
 
