@@ -224,7 +224,7 @@ def derive_tournaments(df):
     dim_tournaments = (
         tourney_ranked
         .filter(F.col("rn") == 1)
-        .drop("rn", "match_count"< "first_seen_date", "last_seen_date")
+        .drop("rn", "match_count", "first_seen_date", "last_seen_date")
         .join(date_ranges, on="tourney_id", how = "left")
         .select(
             "tourney_id",

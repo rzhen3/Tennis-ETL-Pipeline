@@ -45,7 +45,7 @@ def nullify_empty_strings(df: DataFrame) -> DataFrame:
         if isinstance(field.dataType, T.StringType):
             df = df.withColumn(
                 field.name, 
-                F.when(F.col(field.name) == "", None).otherwise(F.col(F.col(field.name)))
+                F.when(F.col(field.name) == "", None).otherwise(F.col(field.name))
             )
 
     return df

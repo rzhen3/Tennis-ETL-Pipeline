@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS tennis_raw.dim_players (
 
     source_file STRING OPTIONS(description='source CSV filename'),
     loaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP() OPTIONS(description='timestamp of initial load'),
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP() OPTIONS(description'timestamp of latest update')
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP() OPTIONS(description='timestamp of latest update')
 )
 CLUSTER BY player_id
 OPTIONS(description='player dimension - SCD type 1');
@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS tennis_raw.fact_matches (
     winner_rank_points INT64 OPTIONS(description='winners ranking points'),
     winner_age INT64 OPTIONS(description='winners age at time of match'),
     winner_ht INT64 OPTIONS(description='winners height in cm'),
-    winner_hand INT64 options(description='winner handedness'),
+    winner_hand STRING options(description='winner handedness'),
     winner_ioc STRING OPTIONS(description='winner country code'),
 
     -- loser metadata (at time of match)

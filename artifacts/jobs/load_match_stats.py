@@ -110,7 +110,7 @@ def unpivot_stats(df):
     # build loser row projections
     loser_cols = identity_cols + [
         F.col("loser_id").alias("player_id"),
-        F.lit("winner").alias("player_role")
+        F.lit("loser").alias("player_role")
     ]
 
     for target_name, _, loser_col in STAT_COLUMN_MAP:
@@ -155,7 +155,7 @@ def validate_stat_ranges(df):
     issues = []
 
     # check for non-negativities
-    non_negative_cols = ["aces", "double_faults", "service_poinst",
+    non_negative_cols = ["aces", "double_faults", "service_points",
                          "first_serves_in", "first_serves_won",
                          "second_serves_won", "service_games",
                          "break_points_saved", "break_points_faced"]

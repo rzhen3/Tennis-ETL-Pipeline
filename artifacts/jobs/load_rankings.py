@@ -25,8 +25,8 @@ def transform_rankings(df):
     """
     transform raw ranking CSV data to match fact_rankings BQ schema
     """
-    df = trim_string_columns()
-    df = nullify_empty_strings()
+    df = trim_string_columns(df)
+    df = nullify_empty_strings(df)
 
     # parse date strings
     df = df.withColumn(
@@ -59,7 +59,7 @@ def transform_rankings(df):
         "points",
         "ranking_sequence"
     )
-    df.orderby
+    df.orderBy("ranking_date", "rank")
     return df
 
 def audit_ranking_quality(df):
@@ -117,7 +117,7 @@ def audit_ranking_quality(df):
         .withColumnRenamed("2", "rank2_points")
         .filter(
             F.col("rank1_points").isNotNull() &
-            F.col("rank2_poinst").isNotNull()
+            F.col("rank2_points").isNotNull()
         )
     )
 
