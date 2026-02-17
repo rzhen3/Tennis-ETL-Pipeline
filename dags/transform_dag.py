@@ -1,6 +1,9 @@
 from airflow import DAG
+from airflow.providers.standard.operators.python import PythonOperator
 from airflow.providers.google.cloud.operators.dataproc import DataprocCreateBatchOperator
 from airflow.datasets import Dataset
+
+from plugins.bq_checks import preflight_schema_check, postload_validation
 
 from dotenv import load_dotenv
 import os
@@ -170,5 +173,28 @@ with DAG(
         ),
     )
 
+    # pre-flight: verify BQ tables exist before Dataproc
+    schema_check = PythonOperator(
+        task_id="preflight_schema_check",
+        python_callable=preflight_schema_check,
+        retries = 0
+    )
+
+    # post-load: validate data after proc jobs complete
+    validate = PythonOperator(
+        task_id = "postload_validation",
+        python_callable = postload_validation,
+        retries = 1,
+        retry_delay=dt.timedelta(minutes=2),
+    )
+
     # run pre-requisites
+
+    # schema must exist before job runs
+    schema_check >> [load_players, load_matches, load_rankings]
+
+    # match_stats depends on players + matches
     [load_players, load_matches] >> load_match_stats
+
+    # validation run after every job completes
+    [load_match_stats, load_rankings] >> validate

@@ -10,6 +10,7 @@ from google.cloud import bigquery
 PROJECT_ID = "tennis-etl-pipeline"
 DATASET_ID = "tennis_raw"
 DDL_FILE = Path(__file__).resolve().parent.parent/ "docs" / "bigquery_schema.sql"
+HEALTH_VIEWS_FILE = Path(__file__).resolve().parent.parent / "docs" / "pipeline_health.sql"
 
 
 # specify deletion order for tables
@@ -155,7 +156,7 @@ def cmd_create(client: bigquery.Client, **kwargs):
 
     print(f"Executing {len(statements)} DDL statements from {DDL_FILE.name}...\n")
 
-    for i, statements in enumerate(statements, 1):
+    for i, statement in enumerate(statements, 1):
 
         label = statements[:80].replace("\n", " ")
         print(f"[{i}/{len(statements)}] {label}...")
@@ -200,6 +201,49 @@ def cmd_recreate(client: bigquery.Client, **kwargs):
     print("\nRecreating schema...")
     cmd_create(client)
 
+def cmd_deploy_views(client: bigquery.Client, **kwarsgs):
+    """
+    deploy/replace the monitoring views from pipeline_health.sql.
+    safe to run repeatedly (CREATE OR REPLACE).
+    """
+    if not HEALTH_VIEWS_FILE.exists():
+        print(f"ERROR: health views file not found at {HEALTH_VIEWS_FILE}")
+        sys.exit(1)
+
+    sql_content = HEALTH_VIEWS_FILE.read_text()
+    statements = [s.strip() for s in sql_content.split(";") if s.strip()]
+
+    # filter to only CREATE OR REPLACE VIEW statements (in-case other statements enter)
+    view_statements = [
+        s for s in statements
+        if s.upper().lstrip().startswith("CREATE")
+    ]
+
+    print(f"Deploying {len(view_statements)} views from {HEALTH_VIEWS_FILE.name}...\n")
+
+    for i, statement in enumerate(view_statements, 1):
+
+        # extract name
+        name = "unknown"
+        for line in statement.split("\n"):
+            if "VIEW" in line.upper() and "." in line:
+                name = line.strip().split()[-2] if "AS" in line.upper() else line.strip().split()[-1]
+                break
+        
+        print(f"[{i}/{len(view_statements)}] {name}...")
+        try:
+            job = client.query(statement)
+            job.result()
+            print(f"OK: deployed")
+        except Exception as e:
+            print(f"ERROR: {e}")
+
+    print(f"\nDone. Query views with:")
+    print(f"SELECT * FROM tennis_raw.vw_pipeline_heatlh;")
+    print(f"SELECT * FROM tennis_raw.vw_data_quality_summary;")
+    print(f"SELECT * FROM tennis_raw.vw_load_history;")
+
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -220,14 +264,28 @@ examples:
 """
     )
 
-    args = parser.parser_args()
+    parser.add_argument(
+        "command",
+        choices = ["status", "truncate", "drop", "create", "recreate", "deploy-views"],
+        help = "action to perform"
+    )
+    parser.add_argument(
+        "--tables",
+        nargs="+",
+        default=None,
+        help=f"specific table(s) to target (default: all).\
+            valid: {', '.join(TABLE_ORDER)}"
+    )
+
+    args = parser.parse_args()
 
     commands = {
-        "status":   cmd_status,
-        "truncate": cmd_truncate,
-        "drop":     cmd_drop,
-        "create":   cmd_create,
-        "recreate": cmd_recreate,
+        "status":       cmd_status,
+        "truncate":     cmd_truncate,
+        "drop":         cmd_drop,
+        "create":       cmd_create,
+        "recreate":     cmd_recreate,
+        "deploy-views": cmd_deploy_views
     }
 
     client = get_client()
