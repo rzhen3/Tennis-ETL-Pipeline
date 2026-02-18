@@ -103,6 +103,7 @@ def postload_validation(**context):
             row_count = table.num_rows
             min_expected = MIN_ROW_COUNTS[table_name]
 
+            # actual rows in table was smaller than expected
             if row_count < min_expected:
                 msg = (
                     f"{table_name}: {row_count:,} rows \
@@ -128,6 +129,8 @@ def postload_validation(**context):
     """
 
     try:
+
+        # query for tables and number of winners/losers
         role_results = {
             row.player_role: row.cnt
             for row in client.query(role_query).result()
@@ -135,6 +138,7 @@ def postload_validation(**context):
 
         log.info(f"Roles found: {role_results}")
 
+        # key 'loser' or 'winner' column missing
         if "winner" not in role_results:
             issues.append("fact_match_stats")
         if "loser" not in role_results:
@@ -174,7 +178,7 @@ def postload_validation(**context):
     )
 
     try:
-        
+        # query for tables and their latest modification
         table_modified_times = {
             row.table_id: row.last_modified
             for row in client.query(freshness_query, job_config = job_config).result()
@@ -184,10 +188,13 @@ def postload_validation(**context):
         stale_threshold = timedelta(hours = 2)
 
         for table_name in EXPECTED_TABLES:
+
+            # expected table not found in BigQuery
             if table_name not in table_modified_times:
                 issues.append(f"{table_name}: not found in __TABLES__ metadata")
                 continue
-
+            
+            # calculate age of table
             last_mod = table_modified_times[table_name]
             age = now - last_mod
             if age > stale_threshold:
@@ -201,6 +208,8 @@ def postload_validation(**context):
     except Exception as e:
         log.warning(f"Freshness check failed: {e}")
 
+
+    # display summary of issues
     if issues:
         summary = "\n - ".join(issues)
         raise AirflowFailException(
@@ -208,9 +217,3 @@ def postload_validation(**context):
         )
     
     log.info("\nPost-load validation passed - all checks green")
-
-    
-
-        
-
-

@@ -152,17 +152,18 @@ def cmd_create(client: bigquery.Client, **kwargs):
 
     ddl_content = DDL_FILE.read_text()
     statements = [s.strip() for s in ddl_content.split(";") if s.strip()]
+    total_statements = len(statements)
 
 
     print(f"Executing {len(statements)} DDL statements from {DDL_FILE.name}...\n")
 
     for i, statement in enumerate(statements, 1):
 
-        label = statements[:80].replace("\n", " ")
-        print(f"[{i}/{len(statements)}] {label}...")
+        label = statement[:80].replace("\n", " ")
+        print(f"[{i}/{total_statements}] {label}...")
 
         try:
-            job = client.query(statements)
+            job = client.query(statement)
             job.result()
             print(f"Success")
 
@@ -231,6 +232,8 @@ def cmd_deploy_views(client: bigquery.Client, **kwarsgs):
                 break
         
         print(f"[{i}/{len(view_statements)}] {name}...")
+
+        # execute query
         try:
             job = client.query(statement)
             job.result()
@@ -289,6 +292,8 @@ examples:
     }
 
     client = get_client()
+
+    # call the required command with bq client client and tables
     commands[args.command](client, tables=args.tables)
 
 

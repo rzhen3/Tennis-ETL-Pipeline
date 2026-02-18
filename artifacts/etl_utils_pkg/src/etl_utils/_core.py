@@ -60,6 +60,8 @@ def add_audit_columns(df: DataFrame, source_file: str) -> DataFrame:
         .withColumn("loaded_at", F.current_timestamp())
         .withColumn("updated_at", F.current_timestamp())
     )
+    # NOTE: current_timestamp() assigns all rows from a job the identical timestmap.
+    # as such, grouping works on the job-level
 
 
 def write_to_bigquery(df: DataFrame, table: str, mode: str = 'overwrite'):
