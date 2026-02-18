@@ -9,3 +9,6 @@ logs/*
 analysis/*.csv
 artifacts/wheels/*
 __pycache__/*
+plugins/__pycache__
+logs/dag_processor
+dags/__pycache__

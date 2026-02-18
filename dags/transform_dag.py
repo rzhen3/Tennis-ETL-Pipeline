@@ -3,7 +3,8 @@ from airflow.providers.standard.operators.python import PythonOperator
 from airflow.providers.google.cloud.operators.dataproc import DataprocCreateBatchOperator
 from airflow.datasets import Dataset
 
-from plugins.bq_checks import preflight_schema_check, postload_validation
+# from plugins.bq_checks import preflight_schema_check, postload_validation
+from bq_checks import preflight_schema_check, postload_validation
 
 from dotenv import load_dotenv
 import os
