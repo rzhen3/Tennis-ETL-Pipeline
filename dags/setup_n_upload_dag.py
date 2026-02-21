@@ -2,7 +2,7 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator, ShortCircuitOperator
 from airflow.decorators import task
 # from airflow.models import Variable
-from airflow.sdk import Variable
+from airflow.sdk import Metadata, Variable
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.providers.google.cloud.operators.dataproc import DataprocSubmitJobOperator, DataprocCreateBatchOperator
 from airflow.datasets import Dataset
@@ -183,7 +183,8 @@ with DAG(
     def upload_csvs_to_GCP_bucket(changed_paths, repo_path, 
                                   bucket_prefix = BRONZE_BASE_NAME, 
                                   bucket_name = BUCKET_NAME,
-                                gcp_conn_id = GCP_CONN_ID):
+                                gcp_conn_id = GCP_CONN_ID,
+                                outlet_events = None):
         """
         Upload only new or updated CSVs into Bronze path.
         """
@@ -212,6 +213,13 @@ with DAG(
             )
 
             uploaded_csvs.append(f"gs://{bucket_name}/{blob_name}")
+
+        # attach upload date to dataset event
+        outlet_events[BRONZE_DATASET].extra = {
+            "dt": date_str,
+            "prefix": f"gs://{bucket_name}/{blob_name}",
+            "file_count": len(uploaded_csvs)
+        }
 
         return uploaded_csvs
     

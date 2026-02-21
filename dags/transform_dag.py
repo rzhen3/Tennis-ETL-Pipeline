@@ -1,7 +1,10 @@
+import logging
+
 from airflow import DAG
 from airflow.providers.standard.operators.python import PythonOperator
 from airflow.providers.google.cloud.operators.dataproc import DataprocCreateBatchOperator
 from airflow.datasets import Dataset
+from airflow.decorators import task
 
 # from plugins.bq_checks import preflight_schema_check, postload_validation
 from bq_checks import preflight_schema_check, postload_validation
@@ -81,13 +84,6 @@ def sanitize_batch_id(raw_id: str) -> str:
     sanitized = sanitized[:63].rstrip()
     return sanitized
 
-# input paths for jobs. auto-fill with logical date
-_BRONZE_PREFIX = f"gs://{BUCKET_NAME}/{BRONZE_BASE_NAME}/dt="
-PLAYERS_INPUT = _BRONZE_PREFIX + "{{ ds }}/atp_players.csv"
-MATCHES_INPUT = _BRONZE_PREFIX + "{{ ds }}/atp_matches_*.csv"
-RANKINGS_INPUT = _BRONZE_PREFIX + "{{ ds }}/atp_rankings_*.csv"
-
-MATCH_STATS_INPUT = MATCHES_INPUT
 
 # DAG definition
 with DAG(
@@ -111,6 +107,55 @@ with DAG(
     }
 ) as dag:
     
+    @task
+    def resolve_processing_date(**context):
+        """
+        Determine which dt= partition in the GCP bucket to process.
+        
+        Prio:
+        - Dataset event metadata (from upload DAG)
+        - fallback to logical_date (for manual triggers)
+
+        returns date string for downstream tasks to construct GCS path
+        """
+
+        events = context.get("triggering_dataset_events", {})
+
+        for dataset_obj, event_list in events.items():
+
+            for event in reversed(event_list):
+                extra = event.extra or {}
+                dt_value = extra.get("dt")
+
+                # indeed found
+                if dt_value:
+                    logging.info(
+                        f"Resolved dt={dt_value} from dataset event metadata \
+                            (prefix={extra.get('prefix', 'N/A')}, \
+                                file_count = {extra.get('file_count', 'N/A')})"
+                    )
+                    return dt_value
+                
+        fallback = context["logical_date"].strftime("%Y-%m-%d")
+        logging.warning(f"No dataset event metadata found.\n\
+                        Falling back to logical_date: dt={fallback}")
+        return fallback
+    
+    processing_date = resolve_processing_date()
+
+    # build input paths using XCom from resolve_processing_date
+    _BRONZE_PREFIX = f"gs://{BUCKET_NAME}/{BRONZE_BASE_NAME}/dt="
+    _DT = "{{ ti.xcom_pull(task_ids='resolve_processing_date') }}"
+    PLAYERS_INPUT = f"{_BRONZE_PREFIX}{_DT}/atp_players.csv"
+    MATCHES_INPUT = f"{_BRONZE_PREFIX}{_DT}/atp_matches_*.csv"
+    RANKINGS_INPUT = f"{_BRONZE_PREFIX}{_DT}/atp_rankings_*.csv"
+    MATCH_STATS_INPUT = MATCHES_INPUT
+
+    _DT_NODASH = (
+        "{{ ti.xcom_pull(task_ids='resolve_processing_date') | replace('-', '') }}"
+    )
+
+    
     # load players dimension
     # pre-requisite for matches/stats because dim_players is referenced
     # by fact_matches.winner_id / loser_id
@@ -120,7 +165,7 @@ with DAG(
         region=REGION,
         gcp_conn_id=GCP_CONN_ID,
 
-        batch_id="players-{{ ds_nodash }}-{{ ti.try_number }}",
+        batch_id=f"players-{_DT_NODASH}-{{{{ ti.try_number }}}}",
         batch=make_batch_config(
             job_filename="load_players.py",
             args=["--input_path", PLAYERS_INPUT],
@@ -136,7 +181,7 @@ with DAG(
         project_id=PROJECT_ID,
         region=REGION,
         gcp_conn_id=GCP_CONN_ID,
-        batch_id="matches-{{ ds_nodash }}-{{ ti.try_number }}",
+        batch_id="matches-{{ logical_date | ds_nodash }}-{{ ti.try_number }}",
         batch=make_batch_config(
             job_filename="load_matches.py",
             args=["--input_path", MATCHES_INPUT]
@@ -151,7 +196,7 @@ with DAG(
         project_id = PROJECT_ID,
         region=REGION,
         gcp_conn_id=GCP_CONN_ID,
-        batch_id="rankings-{{ ds_nodash }}-{{ ti.try_number }}",
+        batch_id="rankings-{{ logical_date | ds_nodash }}-{{ ti.try_number }}",
         batch=make_batch_config(
             job_filename="load_rankings.py",
             args=["--input_path", RANKINGS_INPUT]
@@ -167,7 +212,7 @@ with DAG(
         project_id=PROJECT_ID,
         region=REGION,
         gcp_conn_id=GCP_CONN_ID,
-        batch_id="match-stats-{{ ds_nodash }}-{{ ti.try_number }}",
+        batch_id="match-stats-{{ logical_date | ds_nodash }}-{{ ti.try_number }}",
         batch=make_batch_config(
             job_filename="load_matches_stats.py",
             args=["--input_path", MATCH_STATS_INPUT]
@@ -190,9 +235,10 @@ with DAG(
     )
 
     # run pre-requisites
+    
 
     # schema must exist before job runs
-    schema_check >> [load_players, load_matches, load_rankings]
+    processing_date >> schema_check >> [load_players, load_matches, load_rankings]
 
     # match_stats depends on players + matches
     [load_players, load_matches] >> load_match_stats
