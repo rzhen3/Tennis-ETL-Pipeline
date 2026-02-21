@@ -1,14 +1,28 @@
+# keys
 .env
-.venv
-tennis-etl-env
-tennis-etl-pipeline
-config/simple_auth_passwords.json
-data/*
 keys/*
+config/simple_auth_passwords.json
+
+# python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+tennis-etl-env/
+
+# airflow
 logs/*
+plugins/__pycache__/
+
+# build artifacts
+artifacts/wheels/
+artifacts/etl_utils_pkg/dist/
+artifacts/etl_utils_pkg/build/
+
+# GCP
+tennis-etl-pipeline
+
+# data
+data/*
 analysis/*.csv
-artifacts/wheels/*
-__pycache__/*
-plugins/__pycache__
-logs/dag_processor
-dags/__pycache__

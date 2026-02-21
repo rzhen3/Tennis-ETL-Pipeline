@@ -244,30 +244,9 @@ with DAG(
 
 
         return uploads
-    
-    # dataproc_task = DataprocCreateBatchOperator(
-    #     task_id = "csv_to_staging",
-    #     project_id = "tennis-etl-pipeline",
-    #     region = "...",
-    #     batch = {
-    #         "pyspark-batch":{
-    #             "main_python_file_uri":...,
-    #             "python_file_uris":...,
-    #             "args": [
-    #                 ...
-    #             ],
-    #             "runtime_config": {...},
-    #             "environment_config": {
-    #                 "execution_config": {...},
-    #             },
 
-    #         }
-    #     },
-    #     batch_id = ...,
-    # )
 
     upload_jobs_to_GCP_bucket()
-
 
     # fetch repo and index CSVs
     local_repo_path = fetch_repo()

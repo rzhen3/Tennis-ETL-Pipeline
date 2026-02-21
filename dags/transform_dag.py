@@ -28,13 +28,13 @@ DATAPROC_SERVICE_ACCOUNT = os.getenv(
 )
 
 # GCS paths
-BRONZE_BASE = f"bronze/source=github/owner={REPO_OWNER}/repo={REPO_OWNER}/ref={BRANCH}"
+BRONZE_BASE_NAME = f"bronze/source=github/owner={REPO_OWNER}/repo={REPO_NAME}/ref={BRANCH}"
 ARTIFACTS_BASE = "artifacts"
 
 JOBS_URI = f"gs://{BUCKET_NAME}/{ARTIFACTS_BASE}/jobs"
 WHEEL_URI = f"gs://{BUCKET_NAME}/{ARTIFACTS_BASE}/wheels/etl_utils-0.1.1-py3-none-any.whl"
 
-BRONZE_DATASET = Dataset(f"gs://{BUCKET_NAME}/{BRONZE_BASE}")
+BRONZE_DATASET = Dataset(f"gs://{BUCKET_NAME}/{BRONZE_BASE_NAME}/")
 
 
 # build dataproc serverless batch config
@@ -82,7 +82,7 @@ def sanitize_batch_id(raw_id: str) -> str:
     return sanitized
 
 # input paths for jobs. auto-fill with logical date
-_BRONZE_PREFIX = f"gs://{BUCKET_NAME}/{BRONZE_BASE}/dt="
+_BRONZE_PREFIX = f"gs://{BUCKET_NAME}/{BRONZE_BASE_NAME}/dt="
 PLAYERS_INPUT = _BRONZE_PREFIX + "{{ ds }}/atp_players.csv"
 MATCHES_INPUT = _BRONZE_PREFIX + "{{ ds }}/atp_matches_*.csv"
 RANKINGS_INPUT = _BRONZE_PREFIX + "{{ ds }}/atp_rankings_*.csv"
