@@ -187,6 +187,7 @@ with DAG(
                                 outlet_events = None):
         """
         Upload only new or updated CSVs into Bronze path.
+        Attach path metadata as Dataset event so that downstream tasks can read the correct data.
         """
 
         if len(changed_paths) == 0:
@@ -214,7 +215,7 @@ with DAG(
 
             uploaded_csvs.append(f"gs://{bucket_name}/{blob_name}")
 
-        # attach upload date to dataset event
+        # attach upload date and more as metadata to event
         outlet_events[BRONZE_DATASET].extra = {
             "dt": date_str,
             "prefix": f"gs://{bucket_name}/{blob_name}",

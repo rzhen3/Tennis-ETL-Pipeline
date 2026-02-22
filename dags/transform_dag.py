@@ -1,5 +1,6 @@
 import logging
 
+from airflow.sdk import Param
 from airflow import DAG
 from airflow.providers.standard.operators.python import PythonOperator
 from airflow.providers.google.cloud.operators.dataproc import DataprocCreateBatchOperator
@@ -99,6 +100,18 @@ with DAG(
     start_date = dt.datetime(2025, 2, 1),
     catchup = False,
 
+    # declare param for manual override
+    params = {
+        "dt": Param(
+            default = None,
+            type = ["null", "string"],
+            pattern = r"^\d{4}-\d{2}-\d{2}$",
+            description="Override the processing date partition (YYYY-MM-DD).\n\
+                Leave empty for automatic detection from the upload DAG.",
+            title="Processing Date Override."
+        ),
+    },
+
     # default args
     default_args={
         "retries": 1,
@@ -110,7 +123,7 @@ with DAG(
     @task
     def resolve_processing_date(**context):
         """
-        Determine which dt= partition in the GCP bucket to process.
+        Determine which dt= partition in the GCP bucket to process for remaining tasks.
         
         Prio:
         - Dataset event metadata (from upload DAG)
@@ -119,6 +132,27 @@ with DAG(
         returns date string for downstream tasks to construct GCS path
         """
 
+        # check for manual override via dag_run.conf
+        # i.e. airflow dags trigger ... --conf '{"dt": "2026-02-22"}'
+        conf = context["dag_run"].conf or {}
+        override_dt = conf.get("dt")
+        
+        if override_dt:
+            # validate data format before using
+            try:
+                dt.datetime.strptime(override_dt, "%Y-%m-%d")
+            except ValueError:
+                raise ValueError(
+                    f"Invalid dt format in dag_run.conf: '{override_dt}'. \n\
+                        Expected YYYY-MM-DD."
+                )
+            
+            logging.info(f"Using manual override: dt={override_dt} (from dag_run.conf)")
+            return override_dt
+        
+
+        # use dataset event metadata.
+        # upload_DAG triggers this DAG via dataset outlet.
         events = context.get("triggering_dataset_events", {})
 
         for dataset_obj, event_list in events.items():
@@ -136,6 +170,9 @@ with DAG(
                     )
                     return dt_value
                 
+        # final check, using logical_date
+        # last resort using scheduler-assigned timestamp.
+        # may not match actual upload date, but better than nothing.
         fallback = context["logical_date"].strftime("%Y-%m-%d")
         logging.warning(f"No dataset event metadata found.\n\
                         Falling back to logical_date: dt={fallback}")
