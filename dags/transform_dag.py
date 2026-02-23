@@ -219,7 +219,7 @@ with DAG(
         project_id=PROJECT_ID,
         region=REGION,
         gcp_conn_id=GCP_CONN_ID,
-        batch_id="matches-{{ logical_date | ds_nodash }}-{{ ti.try_number }}",
+        batch_id=f"matches-{_DT_NODASH}-{{{{ ti.try_number }}}}",
         batch=make_batch_config(
             job_filename="load_matches.py",
             args=["--input_path", MATCHES_INPUT]
@@ -234,7 +234,7 @@ with DAG(
         project_id = PROJECT_ID,
         region=REGION,
         gcp_conn_id=GCP_CONN_ID,
-        batch_id="rankings-{{ logical_date | ds_nodash }}-{{ ti.try_number }}",
+        batch_id=f"rankings-{_DT_NODASH}-{{{{ ti.try_number }}}}",
         batch=make_batch_config(
             job_filename="load_rankings.py",
             args=["--input_path", RANKINGS_INPUT]
@@ -246,11 +246,11 @@ with DAG(
     # needs player_id (from dim_players)
     # needs tourney_id (from dim_tournaments, created by load_matches)
     load_match_stats = DataprocCreateBatchOperator(
-        task_id="load_matches_stats",
+        task_id="load_match_stats",
         project_id=PROJECT_ID,
         region=REGION,
         gcp_conn_id=GCP_CONN_ID,
-        batch_id="match-stats-{{ logical_date | ds_nodash }}-{{ ti.try_number }}",
+        batch_id=f"match-stats-{_DT_NODASH}-{{{{ ti.try_number }}}}",
         batch=make_batch_config(
             job_filename="load_matches_stats.py",
             args=["--input_path", MATCH_STATS_INPUT]

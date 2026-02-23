@@ -12,7 +12,7 @@ from etl_utils import (
 )
 
 # table to edit
-TARGET_TABLE = f"{DATASET}".dim_players
+TARGET_TABLE = f"{DATASET}.dim_players"
 
 
 
