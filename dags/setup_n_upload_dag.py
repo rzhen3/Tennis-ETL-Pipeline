@@ -6,6 +6,7 @@ from airflow.sdk import Metadata, Variable
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.providers.google.cloud.operators.dataproc import DataprocSubmitJobOperator, DataprocCreateBatchOperator
 from airflow.datasets import Dataset
+from airflow.exceptions import AirflowSkipException
 # from airflow.utils.context import get_current_context
 
 import logging
@@ -191,7 +192,7 @@ with DAG(
         """
 
         if len(changed_paths) == 0:
-            return []
+            raise AirflowSkipException("No changed CSVs - skipping upload and dataset event.")
         
         hook = GCSHook(gcp_conn_id = gcp_conn_id)
         date_str = dt.date.today().isoformat()

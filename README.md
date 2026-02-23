@@ -9,7 +9,8 @@ setup google auth `gcloud auth application-default login`
 init python venv `./tennis-etl-env/Scripts/activate`
 login to postgres `psql -U postgres`
 
-
+reminder for terraform:
+enable gcloud services for dataproc, bigquery, storage, bigquerystorage ...
 
 to do list:
 - test artifact uploading to GCP bucket

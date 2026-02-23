@@ -153,7 +153,8 @@ with DAG(
 
         # use dataset event metadata.
         # upload_DAG triggers this DAG via dataset outlet.
-        events = context.get("triggering_dataset_events", {})
+        events = context.get("triggering_asset_events", {})
+        print("DEBUG: LISTING EVENTS-", events.items())
 
         for dataset_obj, event_list in events.items():
 
@@ -173,7 +174,7 @@ with DAG(
         # final check, using logical_date
         # last resort using scheduler-assigned timestamp.
         # may not match actual upload date, but better than nothing.
-        fallback = context["logical_date"].strftime("%Y-%m-%d")
+        fallback = context["dag_run"].logical_date.strftime("%Y-%m-%d")
         logging.warning(f"No dataset event metadata found.\n\
                         Falling back to logical_date: dt={fallback}")
         return fallback
