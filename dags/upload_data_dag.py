@@ -75,8 +75,11 @@ with DAG(
 
 
         hook = GCSHook(gcp_conn_id = gcp_conn_id)
+        client = hook.get_conn()
 
-        if hook.exists(bucket_name = bucket_name):
+        bucket = client.lookup_bucket(bucket_name)
+        if bucket is not None:
+            logging.info(f"Bucket '{bucket_name}' already exists.")
             return
         
         hook.create_bucket(
@@ -145,7 +148,7 @@ with DAG(
             csv_indexer[rel] = hasher.hexdigest()
         
         # store indexer locally
-        logging.info(f"Hashed {len(csv_index)} CSV file(s)")
+        logging.info(f"Hashed {len(csv_indexer)} CSV file(s)")
         return csv_indexer
     
     @task
