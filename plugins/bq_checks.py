@@ -28,7 +28,7 @@ MIN_ROW_COUNTS = {
     "dim_tournaments":  10,
     "fact_matches":     100,
     "fact_match_stats": 100,
-    "fact_ranking":     1000,
+    "fact_rankings":     1000,
 }
 
 # helper functions
@@ -57,7 +57,7 @@ def preflight_schema_check(**context):
     except NotFound:
         raise AirflowFailException(
             f"Dataset '{DATASET_ID}' not found in project '{PROJECT_ID}'.\n\
-                Run: python scripst/manage_bigquery.py create"
+                Run: python scripts/manage_bigquery.py create"
         )
     
 
@@ -95,7 +95,7 @@ def postload_validation(**context):
     log.info("Running post-load validation...\n")
 
     # check 1: row counts
-    log.info("Check 11: Min row count thresholds met")
+    log.info("Check 1: Min row count thresholds met")
 
     for table_name in EXPECTED_TABLES:
         try:
@@ -118,50 +118,89 @@ def postload_validation(**context):
             msg = f"{table_name}: table not found"
             log.error(f"ERROR: {msg}")
             issues.append(msg)
+        except Exception as e:
+            msg = f"{table_name}: error reading metadata"
+            log.error(f"ERROR: {msg}")
+            issues.append(msg)
+    
+    
+    # check 2: checking for null foreign keys
+    log.info("\nCheck 2: NULL player_id FKs in fact_matches")
+    null_fk_query = f"""
+        SELECT COUNTIF(winner_id IS NULL) AS null_winners,
+            COUNTIF(loser_id IS NULL) AS null_losers,
+            COUNT(*) AS total_rows 
+        FROM `{_full_table_id('fact_matches')}`
+    """ 
+    try:
+        row = list(client.query(null_fk_query).result())[0]
+        if row.null_winners > 0 or row.null_losers > 0:
+            issues.append(
+                f"fact_matches: NULL foreign keys detected - \
+                    # winner_id nulls={row.null_winners}, # loser_id nulls={row.null_losers} \
+                    (out of {row.total_rows:,} rows)"
+            )
+        else:
+            log.info("OK: fact_matches has no NULL foreign keys")
+    except Exception as e:
+        issues.append(f"fact_matches NULL FK check errored - {e}")
 
-    # check 2: ensure that ratio of winners to losers is equal in fact_match_stats (as it should be)
-    log.info("\nCheck 2: check equal winners and losers in fact_match_stats")
+
+    # check 3: ensure that ratio of winners to losers is equal in fact_match_stats (as it should be)
+    log.info("\nCheck 3: check equal winners and losers in fact_match_stats")
 
     role_query = f"""
-        SELECT player_role, COUNT(*) AS cnt
+        SELECT 
+            COUNTIF(player_role = 'winner') AS num_winners,
+            COUNTIF(player_role = 'loser') AS num_losers
         FROM `{_full_table_id('fact_match_stats')}`
-        GROUP BY player_role
+
     """
 
     try:
-
         # query for tables and number of winners/losers
-        role_results = {
-            row.player_role: row.cnt
-            for row in client.query(role_query).result()
-        }
-
-        log.info(f"Roles found: {role_results}")
-
-        # key 'loser' or 'winner' column missing
-        if "winner" not in role_results:
-            issues.append("fact_match_stats")
-        if "loser" not in role_results:
-            issues.append("fact_match_stats: no 'loser' rows found")
-
-        # check for roughly equal split (ideally should be 1:1 split)
-        if "winner" in role_results and "loser" in role_results:
-            w, l = role_results["winner"], role_results["loser"]
-            ratio = min(w, l) / max(w, l) if max(w, l) > 0 else 0
-            if ratio < 0.90:
-                issues.append(
-                    f"fact_match_stats: winner/loser split is skewed \
-                        ({w:,} vs {l:,}, ratio={ratio:.2f})"
-                )
+        row = list(client.query(role_query).result())[0]
+        
+        if row.num_winners == 0 or row.num_losers == 0:
+            issues.append(f"fact_match_stats: missing player roles - \
+                          # winners={row.num_winners}, # losers={row.num_losers}")
+        else:
+            ratio = min(row.num_winners, row.num_losers) / max(row.num_winners, row.num_losers)
+            if ratio >= 0.999:
+                log.info(f"OK: fact_match_stats winner/loser split is perfectly balanced (ratio=1.00)")
+            elif ratio < 0.95:
+                issues.append(f"fact_match_stats: role imbalance - \
+                              # winners={row.num_winners}, # losers={row.num_losers}, (ratio={ratio:.3f})")
             else:
-                log.info(f"Winner/loser split is balanced (ratio={ratio:.2f})")
+                log.info(f"OK: fact_match_stats winner/loser split is roughly balanced (ratio={ratio:.3f})")
 
     except Exception as e:
         issues.append(f"fact_match_stats role check failed: {e}")
 
+    # check 4: check for orphaned FKs in matches
+    log.info("\nCheck 4: orphaned player_id FKs in matches")
+    fk_orphans = f"""
+        SELECT 
+            COUNTIF(p1.player_id IS NULL) AS orphaned_winners,
+            COUNTIF(p2.player_id IS NULL) AS orphaned_losers,
+            COUNT(*) AS total_rows
+        FROM `{_full_table_id('fact_matches')}` m
+        LEFT JOIN `{_full_table_id('dim_players')}` p1 ON m.winner_id = p1.player_id 
+        LEFT JOIN `{_full_table_id('dim_players')}` p2 ON m.loser_id = p2.player_id
+    """
+    try:
+        row = list(client.query(fk_orphans).result())[0]
+        if row.orphaned_winners > 0 or row.orphaned_losers > 0:
+            issues.append(f"fact_matches: orphaned foreign keys detected - \
+                          winner_id orphans={row.orphaned_winners}, loser_id orphans={row.orphaned_losers}, (out of {row.total_rows:,})")
+        else:
+            log.info("OK: fact_matches has no FK orphans with dim_players")
+    except Exception as e:
+        issues.append(f"fact_matches orphaned FKs errored - {e}")
 
-    # check 3: tables actually modified
-    log.info("\nCheck 3: Table freshness (modified within last 2 hours)")
+
+    # check 5: tables actually modified
+    log.info("\nCheck 5: Table freshness (modified within last 2 hours)")
 
     freshness_query = f"""
         SELECT 
@@ -206,6 +245,7 @@ def postload_validation(**context):
                 log.info(f"OK: {table_name}: modified {age} ago")
 
     except Exception as e:
+        issues.append(f"Freshness check failed: {e}")
         log.warning(f"Freshness check failed: {e}")
 
 
