@@ -49,10 +49,12 @@ REPO_OWNER = os.getenv("REPO_OWNER")
 REPO_NAME = os.getenv("REPO_NAME")
 BRANCH = os.getenv("BRANCH")
 BUCKET_NAME = os.getenv("BUCKET_NAME")
+PROJECT_ID = os.getenv("PROJECT_ID")
 REPO_URL = f"https://github.com/{REPO_OWNER}/{REPO_NAME}/archive/refs/heads/{BRANCH}.zip"
 MANIFEST_VAR_NAME = f"AIRFLOW_VAR_MANIFEST_{REPO_OWNER}_{REPO_NAME}"
 GCP_CONN_ID = "google_cloud_default"
 BRONZE_BASE_NAME = f"bronze/source=github/owner={REPO_OWNER}/repo={REPO_NAME}/ref={BRANCH}"
+# PROJECT_ID = "tennis-etl-pipeline"
 
 ARTIFACT_BASE_NAME = f"artifacts"
 
@@ -62,27 +64,28 @@ ARTIFACT_DATASET = Dataset(f"gs://...")     # need to add
 # --- DAG ---
 
 with DAG(
-    dag_id = "github_csv_to_gcs",
+    dag_id = "upload_data_pipeline",
     tags = ['bronze', 'github', 'gcs'],
     schedule = "0 2 * * 0",
     start_date = dt.datetime(2025, 2, 1),
     catchup = False
 ) as dag:
     @task
-    def ensure_bucket(bucket, project_name, gcp_conn_id = GCP_CONN_ID):
+    def ensure_bucket(bucket_name=BUCKET_NAME, project_name=PROJECT_ID, gcp_conn_id = GCP_CONN_ID):
 
 
         hook = GCSHook(gcp_conn_id = gcp_conn_id)
 
-        if hook.exists(bucket_name = bucket):
+        if hook.exists(bucket_name = bucket_name):
             return
         
         hook.create_bucket(
-            bucket_name = bucket,
+            bucket_name = bucket_name,
             storage_class = "STANDARD",
             location = "US",
             project_id = project_name
         )
+        logging.info(f"created bucket '{bucket_name}'.")
 
     @task
     def fetch_repo():
@@ -100,6 +103,7 @@ with DAG(
         zipped_file.extractall(tmp_dir)
         root = Path(tmp_dir) / f"{REPO_NAME}-{BRANCH}"
 
+        logging.info(f"Extracted repo to: {root}")
         return str(root)
     
     @task
@@ -141,6 +145,7 @@ with DAG(
             csv_indexer[rel] = hasher.hexdigest()
         
         # store indexer locally
+        logging.info(f"Hashed {len(csv_index)} CSV file(s)")
         return csv_indexer
     
     @task
@@ -149,6 +154,7 @@ with DAG(
             Saves manifest as Airflow Variable.
         """
         Variable.set(manifest_name, json.dumps(manifest, indent = 2))
+        logging.info(f"Manifest saved to Airflow Variable '{manifest_name}'.")
 
 
     @task(multiple_outputs = True)
@@ -170,7 +176,7 @@ with DAG(
                    if (not path_str in existing_manifest) or existing_manifest[path_str] != digest
         ]
 
-        logging.info(f"currently saved changed_csvs: {changed_csvs}")
+        logging.info(f"Changed/new CSVs: {changed_csvs}")
         merged_manifest = {
             **existing_manifest,
             **{
@@ -181,7 +187,7 @@ with DAG(
         return {'changed_csvs':changed_csvs, 'merged_manifest':merged_manifest}
     
     @task(outlets=[BRONZE_DATASET])
-    def upload_csvs_to_GCP_bucket(changed_paths, repo_path, 
+    def upload_csvs_to_gcs(changed_paths, repo_path, 
                                   bucket_prefix = BRONZE_BASE_NAME, 
                                   bucket_name = BUCKET_NAME,
                                 gcp_conn_id = GCP_CONN_ID,
@@ -196,14 +202,12 @@ with DAG(
         
         hook = GCSHook(gcp_conn_id = gcp_conn_id)
         date_str = dt.date.today().isoformat()
-        # date_str = get_current_context()['ds']
         dest_prefix = f"{bucket_prefix}/dt={date_str}"
 
         uploaded_csvs = []
 
         for rel in changed_paths:
             src = Path(repo_path) / rel
-
             blob_name = f"{dest_prefix}/{src.name}"
 
             # upload blob via hook
@@ -215,6 +219,7 @@ with DAG(
             )
 
             uploaded_csvs.append(f"gs://{bucket_name}/{blob_name}")
+            logging.info(f"Uploaded: {blob_name}")
 
         # attach upload date and more as metadata to event
         outlet_events[BRONZE_DATASET].extra = {
@@ -223,11 +228,20 @@ with DAG(
             "file_count": len(uploaded_csvs)
         }
 
+        logging.info(f"Uploaded {len(uploaded_csvs)} CSV file(s) to Bronze layer (dt={date_str}).")
         return uploaded_csvs
     
     @task
-    def upload_jobs_to_GCP_bucket(bucket_name = BUCKET_NAME, bucket_prefix = ARTIFACT_BASE_NAME, gcp_conn_id = GCP_CONN_ID):
+    def upload_jobs_to_gcs(bucket_name = BUCKET_NAME, bucket_prefix = ARTIFACT_BASE_NAME, gcp_conn_id = GCP_CONN_ID):
         hook = GCSHook(gcp_conn_id = gcp_conn_id)
+
+        mime_map = {
+            ".py": "text/x-python",
+            ".whl": "application/zip",
+            ".json": "application/json",
+            ".yaml": "application/yaml",
+            ".yml": "application/yaml",
+        }
 
         uploads = []
         artifact_dir = Path("./artifacts")
@@ -236,38 +250,45 @@ with DAG(
         for subdir in subdirs:
 
             full_path = artifact_dir / subdir
+
+            if not full_path.exists():
+                logging.warning(f"Artifact subdirectory not found, skipping: {full_path}")
+                continue
             for file in full_path.iterdir():
+
+                if not file.is_file():
+                    continue
+
                 if file.is_file():
                     full_bucket_path = f"{bucket_prefix}/{subdir}"
 
                     file_path = Path(file.absolute())
-                    # logging.info(f"file_path is:{file_path}")
                     blob_name = f"{full_bucket_path}/{file.name}"
+                    mime_type = mime_map.get(file.suffix.lower(), "application/octet-stream")
+
                     hook.upload(
                         bucket_name = bucket_name,
                         object_name = blob_name,
                         filename = str(file_path),
-                        mime_type = "text/csv",
+                        mime_type = mime_type
                     )
 
-                    uploads.append(str(file_path))
+                    uploads.append(f"gs://{bucket_name}/{blob_name}")
+                    logging.info(f"Uploaded artifact: {blob_name}")
 
-
+        logging.info(f"Uploaded {len(uploads)} artifact file(s) to GCS")
         return uploads
 
 
-    upload_jobs_to_GCP_bucket()
+    bucket_ready        = ensure_bucket(BUCKET_NAME, PROJECT_ID)
+    local_repo          = fetch_repo()
+    csv_index           = hash_csvs(local_repo)
+    comparison          = compare_with_manifest(csv_index)
+    changed_list        = comparison["changed_csvs"]
+    merged_manifest     = comparison["merged_manifest"]
+    csvs_uploaded       = upload_csvs_to_gcs(changed_list, local_repo)
+    jobs_uploaded       = upload_jobs_to_gcs()
+    manifest_saved      = save_manifest(merged_manifest)
 
-    # fetch repo and index CSVs
-    local_repo_path = fetch_repo()
-    csv_index = hash_csvs(local_repo_path)
-
-    # create manifest for changes
-    cmp = compare_with_manifest(csv_index)
-    changes_lst = cmp['changed_csvs']
-    new_manifest = cmp['merged_manifest']
-    save_manifest(new_manifest)
-
-    # upload to GCP
-    upload_csvs_to_GCP_bucket(changes_lst, local_repo_path)
-    print(changes_lst)
+    # explicitly order tasks with no XCom connection
+    bucket_ready >> [local_repo, jobs_uploaded]
