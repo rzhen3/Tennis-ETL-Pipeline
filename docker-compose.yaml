@@ -57,7 +57,8 @@ x-airflow-common:
   # build: .
   environment:
     &airflow-common-env
-    GOOGLE_APPLICATION_CREDENTIALS: /opt/airflow/keys/dataproc-sa-key.json
+    # GOOGLE_APPLICATION_CREDENTIALS: /opt/airflow/keys/dataproc-sa-key.json #OLD
+    GOOGLE_APPLICATION_CREDENTIALS: /opt/airflow/keys/gcs.json
     AIRFLOW__API__SECRET_KEY: 'my_super_secret_key'
 
     # airflow v3 setting user credentials

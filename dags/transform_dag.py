@@ -58,7 +58,7 @@ def make_batch_config(job_filename: str, args: list[str]) -> dict:
         },
         "environment_config": {
             "execution_config": {
-                # "service_account": DATAPROC_SERVICE_ACCOUNT,
+                "service_account": DATAPROC_SERVICE_ACCOUNT,
                 "subnetwork_uri": f"projects/{PROJECT_ID}/regions/{REGION}/subnetworks/default",
             }
         }
