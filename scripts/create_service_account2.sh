@@ -27,6 +27,7 @@ echo ""
 # setup service account: Dataproc job runner
 DATAPROC_SA_NAME="dataproc-tennis-etl"
 DATAPROC_SA_EMAIL="${DATAPROC_SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
+PROJECT_NUMBER="451091983898"
 
 echo "Setting up dataproc job runner service account: ${DATAPROC_SA_EMAIL}"
 
@@ -53,6 +54,22 @@ gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
     --member="serviceAccount:${DATAPROC_SA_EMAIL}" \
     --role="roles/storage.objectViewer" \
     --quiet
+
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+    --member="serviceAccount:${DATAPROC_SA_EMAIL}" \
+    --role="roles/dataproc.worker" \
+    --quiet
+
+
+gcloud iam service-accounts add-iam-policy-binding \
+    "${DATAPROC_SA_EMAIL}" \
+    --member="serviceAccount:service-${PROJECT_NUMBER}@dataproc-accounts.iam.gserviceaccount.com" \
+    --role="roles/iam.serviceAccountUser"
+
+gcloud iam service-accounts add-iam-policy-binding \
+    "${DATAPROC_SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
+    --member="serviceAccount:service-${PROJECT_NUMBER}@compute-system.iam.gserviceaccount.com" \
+    --role="roles/iam.serviceAccountUser"
 
 echo "Dataproc job runner roles granted."
 echo ""
