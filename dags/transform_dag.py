@@ -112,12 +112,11 @@ with DAG(
         ),
     },
 
-    # default args
-    default_args={
-        "retries": 1,
-        "retry_delay": dt.timedelta(minutes=5),
-        "execution_timeout": dt.timedelta(minutes=45),
-    }
+    # default_args={
+    #     "retries": 1,
+    #     "retry_delay": dt.timedelta(minutes=5),
+    #     "execution_timeout": dt.timedelta(minutes=45),
+    # }
 ) as dag:
     
     @task
