@@ -55,6 +55,15 @@ def make_batch_config(job_filename: str, args: list[str]) -> dict:
         },
         "runtime_config": {
             "version": "2.2",
+            "properties": {
+                "spark.dynamicAllocation.initialExecutors": "0",
+                "spark.dynamicAllocation.minExecutors": "0",
+                "spark.dynamicAllocation.maxExecutors": "2",
+
+                "spark.executor.instances": "1",        # safety net, probably overriden by dynamicAllocation
+                "spark.executor.cores": "4",
+                "spark.executor.memory": "4g",
+            },
         },
         "environment_config": {
             "execution_config": {
@@ -183,6 +192,10 @@ with DAG(
     # build input paths using XCom from resolve_processing_date
     _BRONZE_PREFIX = f"gs://{BUCKET_NAME}/{BRONZE_BASE_NAME}/dt="
     _DT = "{{ ti.xcom_pull(task_ids='resolve_processing_date') }}"
+
+    # build batches using timestamp for current run
+    _RUN_TS = "{{ dag_run.logical_date.strftime('%Y%m%d%H%M%S') }}"
+
     PLAYERS_INPUT = f"{_BRONZE_PREFIX}{_DT}/atp_players.csv"
     MATCHES_INPUT = f"{_BRONZE_PREFIX}{_DT}/atp_matches_*.csv"
     RANKINGS_INPUT = f"{_BRONZE_PREFIX}{_DT}/atp_rankings_*.csv"
@@ -202,7 +215,7 @@ with DAG(
         region=REGION,
         gcp_conn_id=GCP_CONN_ID,
 
-        batch_id=f"players-{_DT_NODASH}-{{{{ ti.try_number }}}}",
+        batch_id=f"players-{_DT_NODASH}-{_RUN_TS}-{{{{ ti.try_number }}}}",
         batch=make_batch_config(
             job_filename="load_players.py",
             args=["--input_path", PLAYERS_INPUT],
@@ -218,7 +231,7 @@ with DAG(
         project_id=PROJECT_ID,
         region=REGION,
         gcp_conn_id=GCP_CONN_ID,
-        batch_id=f"matches-{_DT_NODASH}-{{{{ ti.try_number }}}}",
+        batch_id=f"matches-{_DT_NODASH}-{_RUN_TS}-{{{{ ti.try_number }}}}",
         batch=make_batch_config(
             job_filename="load_matches.py",
             args=["--input_path", MATCHES_INPUT]
@@ -233,7 +246,7 @@ with DAG(
         project_id = PROJECT_ID,
         region=REGION,
         gcp_conn_id=GCP_CONN_ID,
-        batch_id=f"rankings-{_DT_NODASH}-{{{{ ti.try_number }}}}",
+        batch_id=f"rankings-{_DT_NODASH}-{_RUN_TS}-{{{{ ti.try_number }}}}",
         batch=make_batch_config(
             job_filename="load_rankings.py",
             args=["--input_path", RANKINGS_INPUT]
@@ -249,7 +262,7 @@ with DAG(
         project_id=PROJECT_ID,
         region=REGION,
         gcp_conn_id=GCP_CONN_ID,
-        batch_id=f"match-stats-{_DT_NODASH}-{{{{ ti.try_number }}}}",
+        batch_id=f"match-stats-{_DT_NODASH}-{_RUN_TS}-{{{{ ti.try_number }}}}",
         batch=make_batch_config(
             job_filename="load_matches_stats.py",
             args=["--input_path", MATCH_STATS_INPUT]
@@ -271,14 +284,17 @@ with DAG(
         retry_delay=dt.timedelta(minutes=2),
     )
 
-    # run pre-requisites
+    # # run pre-requisites
     
 
-    # schema must exist before job runs
-    processing_date >> schema_check >> [load_players, load_matches, load_rankings]
+    # # schema must exist before job runs
+    # processing_date >> schema_check >> [load_players, load_matches, load_rankings]
 
-    # match_stats depends on players + matches
-    [load_players, load_matches] >> load_match_stats
+    # # match_stats depends on players + matches
+    # [load_players, load_matches] >> load_match_stats
 
-    # validation run after every job completes
-    [load_match_stats, load_rankings] >> validate
+    # # validation run after every job completes
+    # [load_match_stats, load_rankings] >> validate
+
+    # linear run for debugging issue
+    processing_date >> schema_check >> load_players >> load_matches >> load_rankings >> load_match_stats >> validate
