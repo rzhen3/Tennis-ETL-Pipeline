@@ -55,12 +55,11 @@ def make_batch_config(job_filename: str, args: list[str]) -> dict:
         },
         "runtime_config": {
             "version": "2.2",
-            "properties": {
-                "spark.dynamicAllocation.initialExecutors": "0",
-                "spark.dynamicAllocation.minExecutors": "0",
+            "properties": {     # Dataproc serverless requires specifically min 2
+                "spark.dynamicAllocation.initialExecutors": "2",
+                "spark.dynamicAllocation.minExecutors": "2",
                 "spark.dynamicAllocation.maxExecutors": "2",
 
-                "spark.executor.instances": "1",        # safety net, probably overriden by dynamicAllocation
                 "spark.executor.cores": "4",
                 "spark.executor.memory": "4g",
             },
