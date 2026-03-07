@@ -104,8 +104,8 @@ def transform_matches(df):
         "loser_id",
 
         # match context
-        "surface",
-        "draw_size",
+        F.col("surface").alias("typical_surface"),
+        F.col("draw_size").alias("typical_draw_size"),
         "tourney_level",
         F.col("round").alias("match_round"),
         "best_of",
@@ -129,7 +129,7 @@ def transform_matches(df):
         "loser_entry",
         "loser_rank",
         "loser_rank_points",
-        "loser_age",
+        F.col("loser_age").cast(T.IntegerType()).alias("loser_age"),
         "loser_ht",
         "loser_hand",
         "loser_ioc",

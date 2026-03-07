@@ -263,7 +263,7 @@ with DAG(
         gcp_conn_id=GCP_CONN_ID,
         batch_id=f"match-stats-{_DT_NODASH}-{_RUN_TS}-{{{{ ti.try_number }}}}",
         batch=make_batch_config(
-            job_filename="load_matches_stats.py",
+            job_filename="load_match_stats.py",
             args=["--input_path", MATCH_STATS_INPUT]
         ),
     )

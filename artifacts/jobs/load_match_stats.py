@@ -20,7 +20,7 @@ MATCHES_SCHEMA = T.StructType([
     T.StructField("draw_size",       T.IntegerType(), nullable=True),
     T.StructField("tourney_level",   T.StringType(),  nullable=True),
     T.StructField("tourney_date",    T.StringType(),  nullable=True),
-    T.StructField("match_num",       T.IntegerType(), nullable=True),
+    T.StructField("match_num",       T.StringType(), nullable=True),
     T.StructField("winner_id",       T.IntegerType(), nullable=True),
     T.StructField("winner_seed",     T.IntegerType(), nullable=True),
     T.StructField("winner_entry",    T.StringType(),  nullable=True),
@@ -231,7 +231,7 @@ def main():
 
     # clean data
     cleaned_df = trim_string_columns(raw_df)
-    cleaned_df = nullify_empty_strings(raw_df)
+    cleaned_df = nullify_empty_strings(cleaned_df)
 
     # date processing
     cleaned_df = cleaned_df.withColumn(
